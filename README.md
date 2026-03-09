@@ -143,3 +143,24 @@ Pri razvoju sistema sledimo načelom čiste arhitekture (Clean Architecture):
 - mikrostoritve so neodvisne
 - komunikacija poteka preko jasno definiranih API-jev
 - odvisnosti tečejo od zunanjih slojev proti domeni
+
+
+## Diagram arhitekture
+
+```mermaid
+flowchart LR
+    UI[Web Application]
+
+    subgraph Microservices
+        M[Movies Service]
+        S[Screenings Service]
+        R[Reservations Service]
+    end
+
+    UI --> M
+    UI --> S
+    UI --> R
+
+    S --> M
+    R --> S
+```
