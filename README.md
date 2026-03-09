@@ -149,18 +149,18 @@ Pri razvoju sistema sledimo načelom čiste arhitekture (Clean Architecture):
 
 ```mermaid
 flowchart LR
-    UI[Web Application]
+    U[Obiskovalec kina] -->|HTTPS| W[Spletna aplikacija]
 
-    subgraph Microservices
-        M[Movies Service]
-        S[Screenings Service]
-        R[Reservations Service]
+    subgraph Sistem za upravljanje kino predstav
+        W -->|REST API| M[Storitev - filmi]
+        W -->|REST API| S[Storitev - predstave]
+        W -->|REST API| R[Storitev - rezervacije]
+
+        M --> MDB[(Podatkovna baza filmov)]
+        S --> SDB[(Podatkovna baza predstav)]
+        R --> RDB[(Podatkovna baza rezervacij)]
+
+        S -->|REST API| M
+        R -->|REST API| S
     end
-
-    UI --> M
-    UI --> S
-    UI --> R
-
-    S --> M
-    R --> S
 ```
