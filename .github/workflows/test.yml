@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'movies/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'movies/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: movies/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./movies
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./movies
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test_movies_db
+          NODE_ENV: test
+        run: npm test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./movies/coverage/coverage-final.json
+          fail_ci_if_error: false
