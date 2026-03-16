@@ -76,10 +76,12 @@ cp .env.example .env
 ```env
 PORT=3001
 NODE_ENV=development
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/cinema-microservices?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/movies_db?retryWrites=true&w=majority
 DB_NAME=movies_db
 LOG_LEVEL=info
 ```
+
+**Pomembno**: Zamenjajte `<username>`, `<password>` in `<cluster-url>` s svojimi MongoDB Atlas podatki.
 
 5. Zaženite storitev:
 ```bash
