@@ -1,5 +1,6 @@
 # Movies Service
 
+
 ## Opis
 
 Movies Service je mikrostoritev, odgovorna za upravljanje podatkov o filmih v sistemu za kino predstave in rezervacije sedežev.
