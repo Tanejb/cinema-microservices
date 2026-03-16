@@ -1,0 +1,41 @@
+services:
+  movies-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: movies-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=movies_db
+      - LOG_LEVEL=info
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  # MongoDB for local development/testing
+  mongodb:
+    image: mongo:7
+    container_name: movies-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=movies_db
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - cinema-network
+    profiles:
+      - local
+
+networks:
+  cinema-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
