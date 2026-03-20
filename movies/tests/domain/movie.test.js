@@ -3,25 +3,11 @@ const Movie = require('../../src/domain/Movie');
 
 describe('Movie Model', () => {
   beforeAll(async () => {
-    // Povežemo se z testno bazo
-    const mongoUri = process.env.MONGODB_URI;
-    
-    if (!mongoUri) {
-      throw new Error('MONGODB_URI is not set in environment variables. Please check your .env file.');
-    }
-
-    try {
-      await mongoose.connect(mongoUri, {
-        dbName: 'test_movies_db', // Uporabimo testno bazo za teste
-        serverSelectionTimeoutMS: 10000 // Timeout 10 sekund za Atlas
-      });
-      console.log('✅ Connected to MongoDB Atlas for testing');
-    } catch (error) {
-      console.error('❌ MongoDB connection failed:', error.message);
-      console.error('Please check your MONGODB_URI in .env file');
-      throw error;
-    }
-  }, 15000); // Povečan timeout na 15 sekund za Atlas povezavo
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+    await mongoose.connect(mongoUri, {
+      dbName: 'test_movies_db'
+    });
+  });
 
   afterAll(async () => {
     // Zapremo povezavo

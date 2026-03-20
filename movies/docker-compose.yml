@@ -9,7 +9,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_URI=mongodb://mongodb:27017
       - DB_NAME=movies_db
       - LOG_LEVEL=info
     volumes:
@@ -30,8 +30,6 @@ services:
       - mongodb-data:/data/db
     networks:
       - cinema-network
-    profiles:
-      - local
 
 networks:
   cinema-network:
