@@ -59,7 +59,7 @@ func (r *MongoReservationRepository) Create(ctx context.Context, reservation *do
 	reservation.CreatedAt = now
 	reservation.UpdatedAt = now
 
-	_, err := r.collection.InsertOne(ctx, reservation)
+	result, err := r.collection.InsertOne(ctx, reservation)
 	if err != nil {
 		// Duplicate key from unique index means seat is already reserved for screening.
 		if strings.Contains(err.Error(), "E11000") {
@@ -67,6 +67,11 @@ func (r *MongoReservationRepository) Create(ctx context.Context, reservation *do
 		}
 		return nil, fmt.Errorf("failed to insert reservation: %w", err)
 	}
+	oid, ok := result.InsertedID.(bson.ObjectID)
+	if !ok {
+		return nil, errors.New("failed to parse inserted reservation id")
+	}
+	reservation.ID = oid
 
 	return reservation, nil
 }
