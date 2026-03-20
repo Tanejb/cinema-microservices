@@ -1,0 +1,38 @@
+services:
+  reservations-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reservations-service
+    ports:
+      - "50051:50051"
+    environment:
+      - GRPC_PORT=50051
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DB_NAME=reservations_db
+      - SERVICE_NAME=reservations-service
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    networks:
+      - cinema-network
+
+  mongodb:
+    image: mongo:7
+    container_name: reservations-mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=reservations_db
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - cinema-network
+
+networks:
+  cinema-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:

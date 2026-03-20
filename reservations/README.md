@@ -33,7 +33,7 @@ Storitev upravlja podatke, kot so:
 
 ## Komunikacija
 
-Reservations Service komunicira preko REST API.
+Reservations Service komunicira preko gRPC (`ReservationsService`).
 
 ### Primer uporabe:
 - spletna aplikacija pošlje zahtevo za rezervacijo sedeža
@@ -60,3 +60,44 @@ Storitev sledi načelom čiste arhitekture:
 - aplikacijski sloj vsebuje poslovno logiko rezerviranja
 - infrastruktura skrbi za hrambo podatkov
 - API sloj omogoča komunikacijo z drugimi deli sistema
+
+---
+
+## Lokalni zagon
+
+### Zahteve
+
+- Go 1.25+
+- Lokalni MongoDB ali Docker
+
+### Zagon storitve
+
+```bash
+go run ./cmd/server
+```
+
+Privzeta gRPC vrata: `50051`.
+
+### Smoke gRPC client (demo)
+
+Ko storitev teče, lahko pošljete testni gRPC klic:
+
+```bash
+go run ./cmd/client
+```
+
+Client pokliče `CreateReservation` in izpiše ustvarjeno rezervacijo.
+
+### Testi
+
+```bash
+go test ./...
+```
+
+### Docker
+
+```bash
+docker compose up -d
+```
+
+To zažene `reservations-service` in `reservations-mongodb`.
