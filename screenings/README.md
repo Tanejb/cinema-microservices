@@ -59,3 +59,41 @@ Storitev sledi načelom čiste arhitekture:
 - aplikacijski sloj vsebuje logiko upravljanja terminov
 - infrastruktura skrbi za podatkovno bazo
 - API sloj omogoča dostop do funkcionalnosti storitve
+
+---
+
+## Implementacija (tekoce)
+
+- REST API za upravljanje terminov predstav
+- OpenAPI/Swagger: `/api-docs/`
+- MongoDB hramba podatkov (`screenings` kolekcija)
+- Logiranje HTTP zahtev in napak
+- Testi:
+  - endpoint testi (`tests/test_screenings_api.py`)
+  - repository integracijski testi (`tests/test_screening_repository_integration.py`)
+
+---
+
+## Lokalni zagon
+
+```bash
+python run.py
+```
+
+- API: `http://localhost:3003`
+- Swagger: `http://localhost:3003/api-docs/`
+
+### Testi
+
+```bash
+pytest -q
+```
+
+### Docker
+
+```bash
+docker compose up -d
+```
+
+- Service: `screenings-service`
+- MongoDB host povezava: `mongodb://localhost:27020`

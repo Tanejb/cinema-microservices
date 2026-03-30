@@ -1,0 +1,36 @@
+services:
+  screenings-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: screenings-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DB_NAME=screenings_db
+      - LOG_LEVEL=INFO
+    depends_on:
+      - mongodb
+    networks:
+      - cinema-network
+
+  mongodb:
+    image: mongo:7
+    container_name: screenings-mongodb
+    ports:
+      - "27020:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=screenings_db
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - cinema-network
+
+networks:
+  cinema-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
