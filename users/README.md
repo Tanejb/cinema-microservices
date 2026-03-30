@@ -58,3 +58,25 @@ Storitev sledi načelom čiste arhitekture:
 - aplikacijski sloj vsebuje primere uporabe
 - infrastruktura vsebuje dostop do podatkov
 - API sloj omogoča komunikacijo z zunanjim svetom
+
+---
+
+## Implementacija (tekoče)
+
+- REST + OpenAPI (Swagger UI na `/apidocs` po zagonu storitve)
+- MongoDB: unikaten `email` (indeks ob zagonu)
+- **RabbitMQ**: ob ustvarjanju/posodobitvi uporabnika se v vrsto `user.events` pošlje JSON (`user.created` / `user.updated`)
+- **Worker** (`python -m worker`): sporočila prebere in zapiše audit v kolekcijo `user_audit`
+- Za lokalni razvoj brez brokerja: `RABBITMQ_ENABLED=false` (storitev deluje, dogodki se ne pošiljajo)
+- Integracijski testi Mongo: nastavi `TEST_MONGODB_URI` ali `MONGODB_URI`, sicer se test preskoči
+
+### Docker (storitev + Mongo + RabbitMQ + worker)
+
+```bash
+docker compose up -d
+```
+
+- API: `http://localhost:3002`
+- Swagger: `http://localhost:3002/apidocs`
+- RabbitMQ management UI: `http://localhost:15672` (uporabnik/geslo iz `docker-compose`, privzeto `cinema` / `cinema`)
+- Mongo (host): `mongodb://localhost:27019`

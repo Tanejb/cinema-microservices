@@ -1,0 +1,76 @@
+services:
+  users-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: users-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DB_NAME=users_db
+      - LOG_LEVEL=INFO
+      - RABBITMQ_ENABLED=true
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=cinema
+      - RABBITMQ_PASSWORD=cinema
+      - RABBITMQ_QUEUE=user.events
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - cinema-network
+
+  users-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: users-worker
+    command: ["python", "-m", "worker"]
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DB_NAME=users_db
+      - LOG_LEVEL=INFO
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=cinema
+      - RABBITMQ_PASSWORD=cinema
+      - RABBITMQ_QUEUE=user.events
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - cinema-network
+
+  mongodb:
+    image: mongo:7
+    container_name: users-mongodb
+    ports:
+      - "27019:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=users_db
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - cinema-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: users-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: cinema
+      RABBITMQ_DEFAULT_PASS: cinema
+    networks:
+      - cinema-network
+
+networks:
+  cinema-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
