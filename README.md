@@ -203,6 +203,27 @@ Vsaka mikrostoritev vsebuje svojo poslovno logiko, API sloj in infrastrukturo.
 
 ---
 
+## Lokalni zagon vseh storitev
+
+Za zagon celotnega sistema z eno MongoDB instanco in enim RabbitMQ brokerjem uporabite root `docker-compose.yml`.
+
+```bash
+docker compose up -d --build
+```
+
+Privzeti lokalni porti:
+- Movies Service: `http://localhost:3001`
+- Users Service: `http://localhost:3002`
+- Screenings Service: `http://localhost:3003`
+- Reservations Service (gRPC): `localhost:50051`
+- MongoDB: `mongodb://localhost:27017`
+- RabbitMQ AMQP: `localhost:5672`
+- RabbitMQ UI: `http://localhost:15672`
+
+Vse storitve uporabljajo isti MongoDB strežnik (`mongo:27017` znotraj Docker omrežja), vendar ločene baze (`movies_db`, `users_db`, `screenings_db`, `reservations_db`).
+
+---
+
 ## Arhitekturna načela
 
 Pri razvoju sistema sledimo načelom čiste arhitekture (Clean Architecture):

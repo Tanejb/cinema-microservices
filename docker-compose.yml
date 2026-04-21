@@ -1,0 +1,150 @@
+services:
+  api-gateway-web:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - MOVIES_SERVICE_URL=http://movies-service:3001
+      - USERS_SERVICE_URL=http://users-service:3002
+      - SCREENINGS_SERVICE_URL=http://screenings-service:3003
+      - RESERVATIONS_GRPC_ADDR=reservations-service:50051
+    depends_on:
+      - movies-service
+      - users-service
+      - screenings-service
+      - reservations-service
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  movies-service:
+    build:
+      context: ./movies
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongo:27017
+      - DB_NAME=movies_db
+      - LOG_LEVEL=info
+    volumes:
+      - ./movies/logs:/app/logs
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  reservations-service:
+    build:
+      context: ./reservations
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    environment:
+      - GRPC_PORT=50051
+      - MONGODB_URI=mongodb://mongo:27017
+      - DB_NAME=reservations_db
+      - SERVICE_NAME=reservations-service
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  users-service:
+    build:
+      context: ./users
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - MONGODB_URI=mongodb://mongo:27017
+      - DB_NAME=users_db
+      - LOG_LEVEL=INFO
+      - RABBITMQ_ENABLED=true
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=cinema
+      - RABBITMQ_PASSWORD=cinema
+      - RABBITMQ_QUEUE=user.events
+    depends_on:
+      - mongo
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  users-worker:
+    build:
+      context: ./users
+      dockerfile: Dockerfile
+    command: ["python", "-m", "worker"]
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+      - DB_NAME=users_db
+      - LOG_LEVEL=INFO
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=cinema
+      - RABBITMQ_PASSWORD=cinema
+      - RABBITMQ_QUEUE=user.events
+    depends_on:
+      - mongo
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  screenings-service:
+    build:
+      context: ./screenings
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - MONGODB_URI=mongodb://mongo:27017
+      - DB_NAME=screenings_db
+      - LOG_LEVEL=INFO
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: cinema
+      RABBITMQ_DEFAULT_PASS: cinema
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+networks:
+  cinema-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
