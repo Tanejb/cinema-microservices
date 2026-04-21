@@ -1,60 +1,41 @@
-# Web Application
+# Web Application (Micro Frontends)
 
 ## Opis
 
-Web Application predstavlja uporabniški vmesnik sistema za upravljanje kino predstav in rezervacij sedežev.
+Spletna aplikacija je implementirana po slogu **Micro Frontends**:
 
-Namen aplikacije je omogočiti uporabniku enostaven pregled filmov, terminov predvajanj in izvedbo rezervacije sedežev preko spletnega brskalnika.
+- `host` aplikacija (shell)
+- `movies` MFE
+- `users` MFE
+- `screenings` MFE
+- `reservations` MFE
 
----
+Host aplikacija prikazuje posamezen MFE po tabih (iframe kompozicija), vsak MFE pa vsebuje UI za testiranje endpointov prek `api-gateway-web`.
 
-## Odgovornosti aplikacije
+## Porti
 
-Spletna aplikacija skrbi za:
+- Host: `http://localhost:4310`
+- Movies MFE: `http://localhost:4311`
+- Users MFE: `http://localhost:4312`
+- Screenings MFE: `http://localhost:4313`
+- Reservations MFE: `http://localhost:4314`
 
-- prikaz seznama filmov
-- prikaz podrobnosti izbranega filma
-- prikaz terminov predstav
-- oddajo rezervacije za izbrani termin
-- komunikacijo z mikrostoritvami
+## Lokalni zagon (brez Docker)
 
----
+V 5 terminalih zaženite:
 
-## Funkcionalnosti
+```bash
+cd web-app/movies && npm run dev
+cd web-app/users && npm run dev
+cd web-app/screenings && npm run dev
+cd web-app/reservations && npm run dev
+cd web-app/host && npm run dev
+```
 
-Uporabniku omogoča:
+## Docker zagon
 
-- pregled razpoložljivih filmov
-- izbiro filma
-- pregled kino predstav za izbran film
-- izbiro termina in sedeža
-- oddajo rezervacije
+Iz root mape projekta:
 
----
-
-## Komunikacija
-
-Spletna aplikacija komunicira z naslednjimi mikrostoritvami preko REST API:
-
-- Movies Service
-- Screenings Service
-- Reservations Service
-
-### Primer poteka:
-1. uporabnik odpre seznam filmov
-2. aplikacija pridobi podatke iz Movies Service
-3. uporabnik izbere film
-4. aplikacija pridobi termine iz Screenings Service
-5. uporabnik odda rezervacijo
-6. aplikacija pošlje zahtevo v Reservations Service
-
----
-
-## Vloga v arhitekturi
-
-Web Application je vstopna točka za uporabnika in povezuje vse tri mikrostoritve v enoten sistem.
-
-Ne vsebuje glavne poslovne logike, ampak skrbi predvsem za:
-- prikaz podatkov
-- zajem uporabniških vnosov
-- pošiljanje zahtev ustreznim storitvam
+```bash
+docker compose up -d --build web-movies web-users web-screenings web-reservations web-host
+```

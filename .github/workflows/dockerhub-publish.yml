@@ -1,0 +1,84 @@
+name: DockerHub Publish
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - name: movies-service
+            context: ./movies
+            dockerfile: ./movies/Dockerfile
+            image: tanej666/cinema-movies-service
+          - name: users-service
+            context: ./users
+            dockerfile: ./users/Dockerfile
+            image: tanej666/cinema-users-service
+          - name: users-worker
+            context: ./users
+            dockerfile: ./users/Dockerfile
+            image: tanej666/cinema-users-worker
+          - name: screenings-service
+            context: ./screenings
+            dockerfile: ./screenings/Dockerfile
+            image: tanej666/cinema-screenings-service
+          - name: reservations-service
+            context: ./reservations
+            dockerfile: ./reservations/Dockerfile
+            image: tanej666/cinema-reservations-service
+          - name: api-gateway-web
+            context: ./api-gateway
+            dockerfile: ./api-gateway/Dockerfile
+            image: tanej666/cinema-api-gateway-web
+          - name: api-gateway-mobile
+            context: ./api-gateway-mobile
+            dockerfile: ./api-gateway-mobile/Dockerfile
+            image: tanej666/cinema-api-gateway-mobile
+          - name: web-host
+            context: ./web-app/host
+            dockerfile: ./web-app/host/Dockerfile
+            image: tanej666/cinema-frontend-host
+          - name: web-movies
+            context: ./web-app/movies
+            dockerfile: ./web-app/movies/Dockerfile
+            image: tanej666/cinema-frontend-movies
+          - name: web-users
+            context: ./web-app/users
+            dockerfile: ./web-app/users/Dockerfile
+            image: tanej666/cinema-frontend-users
+          - name: web-screenings
+            context: ./web-app/screenings
+            dockerfile: ./web-app/screenings/Dockerfile
+            image: tanej666/cinema-frontend-screenings
+          - name: web-reservations
+            context: ./web-app/reservations
+            dockerfile: ./web-app/reservations/Dockerfile
+            image: tanej666/cinema-frontend-reservations
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.component.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.component.context }}
+          file: ${{ matrix.component.dockerfile }}
+          push: true
+          tags: |
+            ${{ matrix.component.image }}:latest
+            ${{ matrix.component.image }}:sha-${{ github.sha }}

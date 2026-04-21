@@ -218,6 +218,11 @@ Privzeti lokalni porti:
 - Reservations Service (gRPC): `localhost:50051`
 - API Gateway Web (Node.js): `http://localhost:8080`
 - API Gateway Mobile (Flask): `http://localhost:8081`
+- Web Host (Micro Frontends): `http://localhost:4310`
+- Web Movies MFE: `http://localhost:4311`
+- Web Users MFE: `http://localhost:4312`
+- Web Screenings MFE: `http://localhost:4313`
+- Web Reservations MFE: `http://localhost:4314`
 - MongoDB: `mongodb://localhost:27017`
 - RabbitMQ AMQP: `localhost:5672`
 - RabbitMQ UI: `http://localhost:15672`
@@ -235,3 +240,33 @@ Pri razvoju sistema sledimo načelom čiste arhitekture (Clean Architecture):
 - komunikacija poteka preko jasno definiranih API-jev
 - odvisnosti tečejo od zunanjih slojev proti domeni
 - struktura repozitorija jasno odraža poslovne koncepte sistema
+
+---
+
+## CI/CD DockerHub publish
+
+Workflow `.github/workflows/dockerhub-publish.yml` ob vsakem `push` na `main`:
+
+- zgradi Docker slike vseh komponent sistema
+- objavi slike na DockerHub namespace `tanej666`
+- za vsako komponento objavi taga `latest` in `sha-<commit>`
+
+Pred uporabo v GitHub repozitoriju nastavite naslednja secrets:
+
+- `DOCKERHUB_USERNAME` -> npr. `tanej666`
+- `DOCKERHUB_TOKEN` -> DockerHub access token
+
+Priporoceni DockerHub repozitoriji:
+
+- `tanej666/cinema-movies-service`
+- `tanej666/cinema-users-service`
+- `tanej666/cinema-users-worker`
+- `tanej666/cinema-screenings-service`
+- `tanej666/cinema-reservations-service`
+- `tanej666/cinema-api-gateway-web`
+- `tanej666/cinema-api-gateway-mobile`
+- `tanej666/cinema-frontend-host`
+- `tanej666/cinema-frontend-movies`
+- `tanej666/cinema-frontend-users`
+- `tanej666/cinema-frontend-screenings`
+- `tanej666/cinema-frontend-reservations`

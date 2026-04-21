@@ -41,6 +41,61 @@ services:
     networks:
       - cinema-network
 
+  web-host:
+    build:
+      context: ./web-app/host
+      dockerfile: Dockerfile
+    ports:
+      - "4310:4310"
+    depends_on:
+      - web-movies
+      - web-users
+      - web-screenings
+      - web-reservations
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  web-movies:
+    build:
+      context: ./web-app/movies
+      dockerfile: Dockerfile
+    ports:
+      - "4311:4311"
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  web-users:
+    build:
+      context: ./web-app/users
+      dockerfile: Dockerfile
+    ports:
+      - "4312:4312"
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  web-screenings:
+    build:
+      context: ./web-app/screenings
+      dockerfile: Dockerfile
+    ports:
+      - "4313:4313"
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
+  web-reservations:
+    build:
+      context: ./web-app/reservations
+      dockerfile: Dockerfile
+    ports:
+      - "4314:4314"
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
   movies-service:
     build:
       context: ./movies
