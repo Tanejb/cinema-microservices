@@ -47,6 +47,12 @@ class UserRepository:
             raise DuplicateEmailError("Email already registered") from exc
         return self._to_response(updated) if updated else None
 
+    def delete(self, user_id: str) -> bool:
+        if not ObjectId.is_valid(user_id):
+            return False
+        result = self.collection.delete_one({"_id": ObjectId(user_id)})
+        return result.deleted_count == 1
+
     @staticmethod
     def _to_response(doc: dict | None) -> dict | None:
         if not doc:

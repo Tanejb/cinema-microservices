@@ -168,6 +168,11 @@ const swaggerSpec = {
         },
         responses: { 200: { description: "Updated" }, 404: { description: "Not found" } },
       },
+      delete: {
+        summary: "Delete user (proxy)",
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        responses: { 200: { description: "Deleted" }, 404: { description: "Not found" } },
+      },
     },
     "/api/web/screenings": {
       get: {
@@ -252,6 +257,11 @@ const swaggerSpec = {
         summary: "Get reservation by id via gRPC",
         parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" }],
         responses: { 200: { description: "OK" } },
+      },
+      delete: {
+        summary: "Delete reservation (soft delete via cancel)",
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" }],
+        responses: { 200: { description: "Cancelled" } },
       },
     },
     "/api/web/reservations/screening/{screeningId}": {

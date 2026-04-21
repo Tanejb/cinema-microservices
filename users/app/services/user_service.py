@@ -35,3 +35,9 @@ class UserService:
                 {"user_id": updated["id"], "email": updated["email"]},
             )
         return updated
+
+    def delete_user(self, user_id: str) -> bool:
+        deleted = self.repository.delete(user_id)
+        if deleted:
+            publish_user_event("user.deleted", {"user_id": user_id})
+        return deleted

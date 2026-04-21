@@ -52,6 +52,10 @@ def test_repository_unique_email_and_crud():
 
         with pytest.raises(DuplicateEmailError):
             repo.update(u2["id"], {"first_name": "X", "last_name": "Y", "email": "new@example.com"})
+
+        deleted = repo.delete(u1["id"])
+        assert deleted is True
+        assert repo.get_by_id(u1["id"]) is None
     finally:
         client.drop_database(db_name)
         client.close()

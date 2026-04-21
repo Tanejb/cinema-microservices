@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package reservations.v1;
+
+service ReservationsService {
+  rpc CreateReservation(CreateReservationRequest) returns (CreateReservationResponse);
+  rpc GetReservationById(GetReservationByIdRequest) returns (GetReservationByIdResponse);
+  rpc ListReservationsByScreening(ListReservationsByScreeningRequest) returns (ListReservationsByScreeningResponse);
+  rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse);
+}
+
+enum ReservationStatus {
+  RESERVATION_STATUS_UNSPECIFIED = 0;
+  RESERVATION_STATUS_CONFIRMED = 1;
+  RESERVATION_STATUS_CANCELLED = 2;
+}
+
+message Reservation {
+  string id = 1;
+  string screening_id = 2;
+  string seat_number = 3;
+  string user_name = 4;
+  string user_email = 5;
+  ReservationStatus status = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message CreateReservationRequest {
+  string screening_id = 1;
+  string seat_number = 2;
+  string user_name = 3;
+  string user_email = 4;
+}
+
+message CreateReservationResponse {
+  Reservation reservation = 1;
+}
+
+message GetReservationByIdRequest {
+  string id = 1;
+}
+
+message GetReservationByIdResponse {
+  Reservation reservation = 1;
+}
+
+message ListReservationsByScreeningRequest {
+  string screening_id = 1;
+}
+
+message ListReservationsByScreeningResponse {
+  repeated Reservation reservations = 1;
+}
+
+message CancelReservationRequest {
+  string id = 1;
+}
+
+message CancelReservationResponse {
+  Reservation reservation = 1;
+}

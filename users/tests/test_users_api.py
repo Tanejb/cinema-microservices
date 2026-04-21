@@ -68,3 +68,21 @@ def test_list_users(mock_service):
     resp = client.get("/api/users")
     assert resp.status_code == 200
     assert resp.get_json()["count"] == 1
+
+
+@patch("app.api.users_routes._service")
+def test_delete_user_success(mock_service):
+    mock_service.return_value.delete_user.return_value = True
+    client = _client()
+    resp = client.delete("/api/users/507f1f77bcf86cd799439011")
+    assert resp.status_code == 200
+    assert resp.get_json()["success"] is True
+
+
+@patch("app.api.users_routes._service")
+def test_delete_user_not_found(mock_service):
+    mock_service.return_value.delete_user.return_value = False
+    client = _client()
+    resp = client.delete("/api/users/507f1f77bcf86cd799439011")
+    assert resp.status_code == 404
+    assert resp.get_json()["success"] is False

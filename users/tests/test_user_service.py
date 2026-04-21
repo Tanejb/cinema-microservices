@@ -49,3 +49,16 @@ def test_create_user_propagates_duplicate_email():
     svc = UserService(repo)
     with pytest.raises(DuplicateEmailError):
         svc.create_user({"first_name": "A", "last_name": "B", "email": "dup@b.com"})
+
+
+def test_delete_user_publishes_on_success():
+    repo = MagicMock()
+    repo.delete.return_value = True
+    with patch("app.services.user_service.publish_user_event") as pub:
+        svc = UserService(repo)
+        deleted = svc.delete_user("507f1f77bcf86cd799439011")
+    assert deleted is True
+    pub.assert_called_once_with(
+        "user.deleted",
+        {"user_id": "507f1f77bcf86cd799439011"},
+    )

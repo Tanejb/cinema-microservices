@@ -116,6 +116,19 @@ function createApp(options = {}) {
     }
   });
 
+  app.delete("/api/web/reservations/:id", async (req, res) => {
+    try {
+      const response = await reservationsClient.cancelReservation(req.params.id);
+      res.status(200).json({ success: true, data: response.reservation });
+    } catch (error) {
+      res.status(502).json({
+        success: false,
+        message: "Reservations service unavailable",
+        details: error.message,
+      });
+    }
+  });
+
   return app;
 }
 

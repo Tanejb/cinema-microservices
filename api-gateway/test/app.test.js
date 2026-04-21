@@ -81,4 +81,25 @@ describe("api-gateway-web", () => {
     expect(response.body.data.id).toBe("r1");
     expect(reservationsClient.createReservation).toHaveBeenCalled();
   });
+
+  test("delete reservation maps to grpc cancel", async () => {
+    const reservationsClient = {
+      createReservation: jest.fn(),
+      getReservationById: jest.fn(),
+      listReservationsByScreening: jest.fn(),
+      cancelReservation: jest.fn().mockResolvedValue({
+        reservation: { id: "r1", status: "cancelled" },
+      }),
+    };
+
+    const app = createApp({
+      axiosClient: jest.fn(),
+      reservationsClient,
+    });
+
+    const response = await request(app).delete("/api/web/reservations/r1");
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.status).toBe("cancelled");
+    expect(reservationsClient.cancelReservation).toHaveBeenCalledWith("r1");
+  });
 });

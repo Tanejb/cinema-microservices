@@ -168,3 +168,30 @@ def update_user(user_id: str):
     if not updated:
         return {"success": False, "message": "User not found"}, 404
     return {"success": True, "data": updated}, 200
+
+
+@users_bp.delete("/<user_id>")
+def delete_user(user_id: str):
+    """
+    Delete user
+    ---
+    tags:
+      - Users
+    parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+        required: true
+        example: 507f1f77bcf86cd799439011
+    responses:
+      200:
+        description: User deleted
+      404:
+        description: User not found
+    """
+    deleted = _service().delete_user(user_id)
+    if not deleted:
+        return {"success": False, "message": "User not found"}, 404
+    logger.info("User deleted: %s", user_id)
+    return {"success": True, "message": "User deleted"}, 200

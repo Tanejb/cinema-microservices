@@ -216,6 +216,8 @@ Privzeti lokalni porti:
 - Users Service: `http://localhost:3002`
 - Screenings Service: `http://localhost:3003`
 - Reservations Service (gRPC): `localhost:50051`
+- API Gateway Web (Node.js): `http://localhost:8080`
+- API Gateway Mobile (Flask): `http://localhost:8081`
 - MongoDB: `mongodb://localhost:27017`
 - RabbitMQ AMQP: `localhost:5672`
 - RabbitMQ UI: `http://localhost:15672`

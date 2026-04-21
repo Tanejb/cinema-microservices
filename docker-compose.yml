@@ -1,4 +1,25 @@
 services:
+  api-gateway-mobile:
+    build:
+      context: ./api-gateway-mobile
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - MOVIES_SERVICE_URL=http://movies-service:3001
+      - USERS_SERVICE_URL=http://users-service:3002
+      - SCREENINGS_SERVICE_URL=http://screenings-service:3003
+      - RESERVATIONS_BRIDGE_URL=http://api-gateway-web:8080/api/web/reservations
+    depends_on:
+      - api-gateway-web
+      - movies-service
+      - users-service
+      - screenings-service
+    restart: unless-stopped
+    networks:
+      - cinema-network
+
   api-gateway-web:
     build:
       context: ./api-gateway
