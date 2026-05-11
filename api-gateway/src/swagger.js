@@ -7,6 +7,16 @@ const swaggerSpec = {
   },
   servers: [{ url: "http://localhost:8080", description: "Gateway local" }],
   components: {
+    parameters: {
+      RequestIdHeader: {
+        name: "X-Request-Id",
+        in: "header",
+        required: false,
+        description:
+          "Optional correlation ID for distributed tracing; echoed in the gateway response and forwarded to microservices (see movies combined.log requestId).",
+        schema: { type: "string", example: "swagger-trace-001" },
+      },
+    },
     schemas: {
       MovieCreate: {
         type: "object",
@@ -55,6 +65,7 @@ const swaggerSpec = {
     "/health": {
       get: {
         summary: "Gateway health",
+        parameters: [{ $ref: "#/components/parameters/RequestIdHeader" }],
         responses: { 200: { description: "Healthy" } },
       },
     },
@@ -62,6 +73,7 @@ const swaggerSpec = {
       get: {
         summary: "List movies (proxy)",
         parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
           { in: "query", name: "genre", required: false, schema: { type: "string" }, example: "Sci-Fi" },
           { in: "query", name: "search", required: false, schema: { type: "string" }, example: "matrix" },
         ],
@@ -91,6 +103,7 @@ const swaggerSpec = {
       },
       post: {
         summary: "Create movie (proxy)",
+        parameters: [{ $ref: "#/components/parameters/RequestIdHeader" }],
         requestBody: {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/MovieCreate" } } },
@@ -101,12 +114,18 @@ const swaggerSpec = {
     "/api/web/movies/{id}": {
       get: {
         summary: "Get movie by id (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         responses: { 200: { description: "OK" }, 404: { description: "Not found" } },
       },
       put: {
         summary: "Update movie (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         requestBody: {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/MovieCreate" } } },
@@ -115,13 +134,17 @@ const swaggerSpec = {
       },
       delete: {
         summary: "Delete movie (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         responses: { 200: { description: "Deleted" }, 404: { description: "Not found" } },
       },
     },
     "/api/web/users": {
       get: {
         summary: "List users (proxy)",
+        parameters: [{ $ref: "#/components/parameters/RequestIdHeader" }],
         responses: {
           200: {
             description: "OK",
@@ -146,6 +169,7 @@ const swaggerSpec = {
       },
       post: {
         summary: "Create user (proxy)",
+        parameters: [{ $ref: "#/components/parameters/RequestIdHeader" }],
         requestBody: {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/UserCreate" } } },
@@ -156,12 +180,18 @@ const swaggerSpec = {
     "/api/web/users/{id}": {
       get: {
         summary: "Get user by id (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         responses: { 200: { description: "OK" }, 404: { description: "Not found" } },
       },
       put: {
         summary: "Update user (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         requestBody: {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/UserCreate" } } },
@@ -170,13 +200,17 @@ const swaggerSpec = {
       },
       delete: {
         summary: "Delete user (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         responses: { 200: { description: "Deleted" }, 404: { description: "Not found" } },
       },
     },
     "/api/web/screenings": {
       get: {
         summary: "List screenings (proxy)",
+        parameters: [{ $ref: "#/components/parameters/RequestIdHeader" }],
         responses: {
           200: {
             description: "OK",
@@ -203,6 +237,7 @@ const swaggerSpec = {
       },
       post: {
         summary: "Create screening (proxy)",
+        parameters: [{ $ref: "#/components/parameters/RequestIdHeader" }],
         requestBody: {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/ScreeningCreate" } } },
@@ -213,12 +248,18 @@ const swaggerSpec = {
     "/api/web/screenings/{id}": {
       get: {
         summary: "Get screening by id (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         responses: { 200: { description: "OK" }, 404: { description: "Not found" } },
       },
       put: {
         summary: "Update screening (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         requestBody: {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/ScreeningCreate" } } },
@@ -227,20 +268,27 @@ const swaggerSpec = {
       },
       delete: {
         summary: "Delete screening (proxy)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "507f1f77bcf86cd799439011" },
+        ],
         responses: { 200: { description: "Deleted" }, 404: { description: "Not found" } },
       },
     },
     "/api/web/screenings/movie/{movieId}": {
       get: {
         summary: "List screenings by movie (proxy)",
-        parameters: [{ in: "path", name: "movieId", required: true, schema: { type: "string" }, example: "movie-001" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "movieId", required: true, schema: { type: "string" }, example: "movie-001" },
+        ],
         responses: { 200: { description: "OK" } },
       },
     },
     "/api/web/reservations": {
       post: {
         summary: "Create reservation via gRPC",
+        parameters: [{ $ref: "#/components/parameters/RequestIdHeader" }],
         requestBody: {
           required: true,
           content: {
@@ -255,26 +303,38 @@ const swaggerSpec = {
     "/api/web/reservations/{id}": {
       get: {
         summary: "Get reservation by id via gRPC",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" },
+        ],
         responses: { 200: { description: "OK" } },
       },
       delete: {
         summary: "Delete reservation (soft delete via cancel)",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" },
+        ],
         responses: { 200: { description: "Cancelled" } },
       },
     },
     "/api/web/reservations/screening/{screeningId}": {
       get: {
         summary: "List reservations by screening via gRPC",
-        parameters: [{ in: "path", name: "screeningId", required: true, schema: { type: "string" }, example: "screening-demo-001" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "screeningId", required: true, schema: { type: "string" }, example: "screening-demo-001" },
+        ],
         responses: { 200: { description: "OK" } },
       },
     },
     "/api/web/reservations/{id}/cancel": {
       post: {
         summary: "Cancel reservation via gRPC",
-        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" }],
+        parameters: [
+          { $ref: "#/components/parameters/RequestIdHeader" },
+          { in: "path", name: "id", required: true, schema: { type: "string" }, example: "67f8f20b92f0cbf2c6100001" },
+        ],
         responses: { 200: { description: "Cancelled" } },
       },
     },

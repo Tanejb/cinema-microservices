@@ -79,7 +79,10 @@ describe("api-gateway-web", () => {
 
     expect(response.statusCode).toBe(201);
     expect(response.body.data.id).toBe("r1");
-    expect(reservationsClient.createReservation).toHaveBeenCalled();
+    expect(reservationsClient.createReservation).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
+    );
   });
 
   test("delete reservation maps to grpc cancel", async () => {
@@ -100,6 +103,35 @@ describe("api-gateway-web", () => {
     const response = await request(app).delete("/api/web/reservations/r1");
     expect(response.statusCode).toBe(200);
     expect(response.body.data.status).toBe("cancelled");
-    expect(reservationsClient.cancelReservation).toHaveBeenCalledWith("r1");
+    expect(reservationsClient.cancelReservation).toHaveBeenCalledWith(
+      "r1",
+      expect.any(String),
+    );
+  });
+
+  test("proxy forwards X-Request-Id to downstream", async () => {
+    const axiosClient = jest.fn().mockResolvedValue({
+      status: 200,
+      data: { success: true, count: 0, data: [] },
+    });
+
+    const app = createApp({
+      axiosClient,
+      reservationsClient: {},
+    });
+
+    const response = await request(app)
+      .get("/api/web/movies")
+      .set("X-Request-Id", "trace-demo-123");
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["x-request-id"]).toBe("trace-demo-123");
+    expect(axiosClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "x-request-id": "trace-demo-123",
+        }),
+      }),
+    );
   });
 });

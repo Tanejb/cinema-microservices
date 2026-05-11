@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
@@ -10,7 +11,23 @@ function createApp(options = {}) {
   const app = express();
   app.use(cors());
   app.use(express.json());
-  app.use(morgan("combined"));
+
+  morgan.token("requestId", (req) => req.requestId || "-");
+  app.use((req, res, next) => {
+    const incoming = req.get("x-request-id");
+    const requestId =
+      incoming && String(incoming).trim()
+        ? String(incoming).trim()
+        : crypto.randomUUID();
+    req.requestId = requestId;
+    res.setHeader("X-Request-Id", requestId);
+    next();
+  });
+  app.use(
+    morgan(
+      ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" reqId=:requestId',
+    ),
+  );
 
   const axiosClient = options.axiosClient || axios;
   const reservationsClient =
@@ -40,7 +57,10 @@ function createApp(options = {}) {
           url: targetUrl,
           data: req.body,
           params: req.query,
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "x-request-id": req.requestId,
+          },
           validateStatus: () => true,
         });
         res.status(response.status).json(response.data);
@@ -60,7 +80,10 @@ function createApp(options = {}) {
 
   app.post("/api/web/reservations", async (req, res) => {
     try {
-      const response = await reservationsClient.createReservation(req.body);
+      const response = await reservationsClient.createReservation(
+        req.body,
+        req.requestId,
+      );
       res.status(201).json({ success: true, data: response.reservation });
     } catch (error) {
       res.status(502).json({
@@ -75,6 +98,7 @@ function createApp(options = {}) {
     try {
       const response = await reservationsClient.getReservationById(
         req.params.id,
+        req.requestId,
       );
       res.status(200).json({ success: true, data: response.reservation });
     } catch (error) {
@@ -90,6 +114,7 @@ function createApp(options = {}) {
     try {
       const response = await reservationsClient.listReservationsByScreening(
         req.params.screeningId,
+        req.requestId,
       );
       res
         .status(200)
@@ -105,7 +130,10 @@ function createApp(options = {}) {
 
   app.post("/api/web/reservations/:id/cancel", async (req, res) => {
     try {
-      const response = await reservationsClient.cancelReservation(req.params.id);
+      const response = await reservationsClient.cancelReservation(
+        req.params.id,
+        req.requestId,
+      );
       res.status(200).json({ success: true, data: response.reservation });
     } catch (error) {
       res.status(502).json({
@@ -118,7 +146,10 @@ function createApp(options = {}) {
 
   app.delete("/api/web/reservations/:id", async (req, res) => {
     try {
-      const response = await reservationsClient.cancelReservation(req.params.id);
+      const response = await reservationsClient.cancelReservation(
+        req.params.id,
+        req.requestId,
+      );
       res.status(200).json({ success: true, data: response.reservation });
     } catch (error) {
       res.status(502).json({

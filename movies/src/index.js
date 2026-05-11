@@ -1,4 +1,5 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
@@ -14,11 +15,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Correlation ID (distributed tracing / request tracing)
+app.use((req, res, next) => {
+  const incoming = req.get('x-request-id');
+  const requestId =
+    incoming && String(incoming).trim()
+      ? String(incoming).trim()
+      : crypto.randomUUID();
+  req.requestId = requestId;
+  res.setHeader('X-Request-Id', requestId);
+  next();
+});
+
 // Request logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`, {
+    requestId: req.requestId,
     ip: req.ip,
-    userAgent: req.get('user-agent')
+    userAgent: req.get('user-agent'),
   });
   next();
 });

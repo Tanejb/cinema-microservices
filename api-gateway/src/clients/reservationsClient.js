@@ -4,6 +4,14 @@ const protoLoader = require("@grpc/proto-loader");
 
 const PROTO_PATH = path.join(__dirname, "../../proto/reservations.proto");
 
+function requestMetadata(requestId) {
+  const metadata = new grpc.Metadata();
+  if (requestId) {
+    metadata.set("x-request-id", String(requestId));
+  }
+  return metadata;
+}
+
 function createReservationsClient(address) {
   const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true,
@@ -19,26 +27,11 @@ function createReservationsClient(address) {
   );
 
   return {
-    createReservation(payload) {
+    createReservation(payload, requestId) {
       return new Promise((resolve, reject) => {
-        client.CreateReservation(payload, (err, response) => {
-          if (err) return reject(err);
-          resolve(response);
-        });
-      });
-    },
-    getReservationById(id) {
-      return new Promise((resolve, reject) => {
-        client.GetReservationById({ id }, (err, response) => {
-          if (err) return reject(err);
-          resolve(response);
-        });
-      });
-    },
-    listReservationsByScreening(screeningId) {
-      return new Promise((resolve, reject) => {
-        client.ListReservationsByScreening(
-          { screening_id: screeningId },
+        client.CreateReservation(
+          payload,
+          requestMetadata(requestId),
           (err, response) => {
             if (err) return reject(err);
             resolve(response);
@@ -46,12 +39,40 @@ function createReservationsClient(address) {
         );
       });
     },
-    cancelReservation(id) {
+    getReservationById(id, requestId) {
       return new Promise((resolve, reject) => {
-        client.CancelReservation({ id }, (err, response) => {
-          if (err) return reject(err);
-          resolve(response);
-        });
+        client.GetReservationById(
+          { id },
+          requestMetadata(requestId),
+          (err, response) => {
+            if (err) return reject(err);
+            resolve(response);
+          },
+        );
+      });
+    },
+    listReservationsByScreening(screeningId, requestId) {
+      return new Promise((resolve, reject) => {
+        client.ListReservationsByScreening(
+          { screening_id: screeningId },
+          requestMetadata(requestId),
+          (err, response) => {
+            if (err) return reject(err);
+            resolve(response);
+          },
+        );
+      });
+    },
+    cancelReservation(id, requestId) {
+      return new Promise((resolve, reject) => {
+        client.CancelReservation(
+          { id },
+          requestMetadata(requestId),
+          (err, response) => {
+            if (err) return reject(err);
+            resolve(response);
+          },
+        );
       });
     },
   };

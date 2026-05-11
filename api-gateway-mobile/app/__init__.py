@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
+import uuid
 
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
 from flasgger import Swagger
 
 from app.clients.rest_client import RestClient
@@ -23,6 +24,23 @@ def create_app(rest_client: RestClient | None = None) -> Flask:
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(level=getattr(logging, log_level, logging.INFO))
     logger = logging.getLogger("mobile-gateway")
+
+    @app.before_request
+    def assign_request_id():
+        incoming = request.headers.get("X-Request-Id")
+        g.request_id = (
+            incoming.strip()
+            if incoming and str(incoming).strip()
+            else str(uuid.uuid4())
+        )
+        logger.info("%s %s request_id=%s", request.method, request.path, g.request_id)
+
+    @app.after_request
+    def echo_request_id(response):
+        rid = getattr(g, "request_id", None)
+        if rid:
+            response.headers["X-Request-Id"] = rid
+        return response
 
     client = rest_client or RestClient(timeout=10)
     movies_url = os.getenv("MOVIES_SERVICE_URL", "http://localhost:3001")
