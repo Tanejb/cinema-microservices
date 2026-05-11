@@ -4,14 +4,18 @@ import logging
 import os
 import uuid
 
-from flask import Flask, g, jsonify, request
+from flask import Flask, g, jsonify, make_response, request
 from flasgger import Swagger
 
+from app.circuit_breaker import CircuitBreaker, CircuitOpenError
 from app.clients.rest_client import RestClient
 from app.swagger import swagger_spec
 
 
-def create_app(rest_client: RestClient | None = None) -> Flask:
+def create_app(
+    rest_client: RestClient | None = None,
+    circuit_breakers: dict[str, CircuitBreaker] | None = None,
+) -> Flask:
     app = Flask(__name__)
 
     app.config["SWAGGER"] = {
@@ -51,16 +55,57 @@ def create_app(rest_client: RestClient | None = None) -> Flask:
         "http://localhost:8080/api/web/reservations",
     )
 
-    def _proxy_rest(service_url: str, target_prefix: str, path_suffix: str = ""):
+    circuit_reset_ms = int(os.getenv("CIRCUIT_BREAKER_RESET_MS", "15000"))
+    circuit_threshold = int(os.getenv("CIRCUIT_BREAKER_ERROR_THRESHOLD", "5"))
+
+    def _breaker(key: str) -> CircuitBreaker:
+        if circuit_breakers and key in circuit_breakers:
+            return circuit_breakers[key]
+        return CircuitBreaker(
+            key,
+            error_threshold=circuit_threshold,
+            reset_timeout_ms=circuit_reset_ms,
+        )
+
+    movies_breaker = _breaker("movies")
+    users_breaker = _breaker("users")
+    screenings_breaker = _breaker("screenings")
+    reservations_breaker = _breaker("reservations")
+
+    def _circuit_open_response(service: str):
+        body = jsonify(
+            {
+                "success": False,
+                "message": "Service temporarily unavailable (circuit open)",
+                "service": service,
+                "reason": "circuit_open",
+            }
+        )
+        resp = make_response(body, 503)
+        resp.headers["Retry-After"] = str(max(1, (circuit_reset_ms + 999) // 1000))
+        return resp
+
+    def _proxy_rest(
+        breaker: CircuitBreaker,
+        service_url: str,
+        target_prefix: str,
+        path_suffix: str = "",
+    ):
         payload = request.get_json(silent=True)
         url = f"{service_url}{target_prefix}{path_suffix}"
-        resp = client.request(
-            request.method,
-            url,
-            json=payload if payload else None,
-            params=request.args,
-        )
-        return jsonify(resp.json()), resp.status_code
+        try:
+            resp = breaker.run(
+                lambda: client.request(
+                    request.method,
+                    url,
+                    json=payload if payload else None,
+                    params=request.args,
+                ),
+                http_response=True,
+            )
+            return jsonify(resp.json()), resp.status_code
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
 
     @app.get("/health")
     def health():
@@ -68,8 +113,20 @@ def create_app(rest_client: RestClient | None = None) -> Flask:
 
     @app.get("/api/mobile/home")
     def home_feed():
-        movies_resp = client.request("GET", f"{movies_url}/api/movies")
-        screenings_resp = client.request("GET", f"{screenings_url}/api/screenings")
+        try:
+            movies_resp = movies_breaker.run(
+                lambda: client.request("GET", f"{movies_url}/api/movies"),
+                http_response=True,
+            )
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
+        try:
+            screenings_resp = screenings_breaker.run(
+                lambda: client.request("GET", f"{screenings_url}/api/screenings"),
+                http_response=True,
+            )
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
         movies = (movies_resp.json() or {}).get("data", [])[:5]
         screenings = (screenings_resp.json() or {}).get("data", [])[:5]
         compact_movies = [
@@ -98,7 +155,15 @@ def create_app(rest_client: RestClient | None = None) -> Flask:
 
     @app.get("/api/mobile/movies")
     def list_movies_mobile():
-        resp = client.request("GET", f"{movies_url}/api/movies", params=request.args)
+        try:
+            resp = movies_breaker.run(
+                lambda: client.request(
+                    "GET", f"{movies_url}/api/movies", params=request.args
+                ),
+                http_response=True,
+            )
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
         data = (resp.json() or {}).get("data", [])
         compact = [
             {
@@ -113,28 +178,40 @@ def create_app(rest_client: RestClient | None = None) -> Flask:
 
     @app.post("/api/mobile/movies")
     def create_movie_mobile():
-        return _proxy_rest(movies_url, "/api/movies")
+        return _proxy_rest(movies_breaker, movies_url, "/api/movies")
 
     @app.get("/api/mobile/movies/<movie_id>")
     def get_movie_mobile(movie_id: str):
-        return _proxy_rest(movies_url, "/api/movies", f"/{movie_id}")
+        return _proxy_rest(movies_breaker, movies_url, "/api/movies", f"/{movie_id}")
 
     @app.put("/api/mobile/movies/<movie_id>")
     def update_movie_mobile(movie_id: str):
-        return _proxy_rest(movies_url, "/api/movies", f"/{movie_id}")
+        return _proxy_rest(movies_breaker, movies_url, "/api/movies", f"/{movie_id}")
 
     @app.delete("/api/mobile/movies/<movie_id>")
     def delete_movie_mobile(movie_id: str):
-        return _proxy_rest(movies_url, "/api/movies", f"/{movie_id}")
+        return _proxy_rest(movies_breaker, movies_url, "/api/movies", f"/{movie_id}")
 
     @app.get("/api/mobile/movies/<movie_id>/details")
     def movie_details(movie_id: str):
-        movie_resp = client.request("GET", f"{movies_url}/api/movies/{movie_id}")
+        try:
+            movie_resp = movies_breaker.run(
+                lambda: client.request("GET", f"{movies_url}/api/movies/{movie_id}"),
+                http_response=True,
+            )
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
         if movie_resp.status_code >= 400:
             return jsonify(movie_resp.json()), movie_resp.status_code
-        screenings_resp = client.request(
-            "GET", f"{screenings_url}/api/screenings/movie/{movie_id}"
-        )
+        try:
+            screenings_resp = screenings_breaker.run(
+                lambda: client.request(
+                    "GET", f"{screenings_url}/api/screenings/movie/{movie_id}"
+                ),
+                http_response=True,
+            )
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
         movie = (movie_resp.json() or {}).get("data", {})
         screenings = (screenings_resp.json() or {}).get("data", [])
         return jsonify(
@@ -149,7 +226,13 @@ def create_app(rest_client: RestClient | None = None) -> Flask:
 
     @app.get("/api/mobile/users/<user_id>/profile")
     def user_profile(user_id: str):
-        resp = client.request("GET", f"{users_url}/api/users/{user_id}")
+        try:
+            resp = users_breaker.run(
+                lambda: client.request("GET", f"{users_url}/api/users/{user_id}"),
+                http_response=True,
+            )
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
         if resp.status_code >= 400:
             return jsonify(resp.json()), resp.status_code
         user = (resp.json() or {}).get("data", {})
@@ -162,75 +245,122 @@ def create_app(rest_client: RestClient | None = None) -> Flask:
 
     @app.get("/api/mobile/users")
     def list_users_mobile():
-        return _proxy_rest(users_url, "/api/users")
+        return _proxy_rest(users_breaker, users_url, "/api/users")
 
     @app.post("/api/mobile/users")
     def create_user_mobile():
-        return _proxy_rest(users_url, "/api/users")
+        return _proxy_rest(users_breaker, users_url, "/api/users")
 
     @app.get("/api/mobile/users/<user_id>")
     def get_user_mobile(user_id: str):
-        return _proxy_rest(users_url, "/api/users", f"/{user_id}")
+        return _proxy_rest(users_breaker, users_url, "/api/users", f"/{user_id}")
 
     @app.put("/api/mobile/users/<user_id>")
     def update_user_mobile(user_id: str):
-        return _proxy_rest(users_url, "/api/users", f"/{user_id}")
+        return _proxy_rest(users_breaker, users_url, "/api/users", f"/{user_id}")
 
     @app.delete("/api/mobile/users/<user_id>")
     def delete_user_mobile(user_id: str):
-        return _proxy_rest(users_url, "/api/users", f"/{user_id}")
+        return _proxy_rest(users_breaker, users_url, "/api/users", f"/{user_id}")
 
     @app.get("/api/mobile/screenings")
     def list_screenings_mobile():
-        return _proxy_rest(screenings_url, "/api/screenings")
+        return _proxy_rest(screenings_breaker, screenings_url, "/api/screenings")
 
     @app.post("/api/mobile/screenings")
     def create_screening_mobile():
-        return _proxy_rest(screenings_url, "/api/screenings")
+        return _proxy_rest(screenings_breaker, screenings_url, "/api/screenings")
 
     @app.get("/api/mobile/screenings/<screening_id>")
     def get_screening_mobile(screening_id: str):
-        return _proxy_rest(screenings_url, "/api/screenings", f"/{screening_id}")
+        return _proxy_rest(
+            screenings_breaker, screenings_url, "/api/screenings", f"/{screening_id}"
+        )
 
     @app.put("/api/mobile/screenings/<screening_id>")
     def update_screening_mobile(screening_id: str):
-        return _proxy_rest(screenings_url, "/api/screenings", f"/{screening_id}")
+        return _proxy_rest(
+            screenings_breaker, screenings_url, "/api/screenings", f"/{screening_id}"
+        )
 
     @app.delete("/api/mobile/screenings/<screening_id>")
     def delete_screening_mobile(screening_id: str):
-        return _proxy_rest(screenings_url, "/api/screenings", f"/{screening_id}")
+        return _proxy_rest(
+            screenings_breaker, screenings_url, "/api/screenings", f"/{screening_id}"
+        )
 
     @app.get("/api/mobile/screenings/movie/<movie_id>")
     def list_screenings_by_movie_mobile(movie_id: str):
-        return _proxy_rest(screenings_url, "/api/screenings", f"/movie/{movie_id}")
+        return _proxy_rest(
+            screenings_breaker,
+            screenings_url,
+            "/api/screenings",
+            f"/movie/{movie_id}",
+        )
 
     @app.post("/api/mobile/reservations")
     def create_reservation_mobile():
         payload = request.get_json(silent=True) or {}
-        resp = client.request("POST", reservations_bridge, json=payload)
-        return jsonify(resp.json()), resp.status_code
+        try:
+            resp = reservations_breaker.run(
+                lambda: client.request("POST", reservations_bridge, json=payload),
+                http_response=True,
+            )
+            return jsonify(resp.json()), resp.status_code
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
 
     @app.get("/api/mobile/reservations/<reservation_id>")
     def get_reservation_mobile(reservation_id: str):
-        resp = client.request("GET", f"{reservations_bridge}/{reservation_id}")
-        return jsonify(resp.json()), resp.status_code
+        try:
+            resp = reservations_breaker.run(
+                lambda: client.request(
+                    "GET", f"{reservations_bridge}/{reservation_id}"
+                ),
+                http_response=True,
+            )
+            return jsonify(resp.json()), resp.status_code
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
 
     @app.delete("/api/mobile/reservations/<reservation_id>")
     def delete_reservation_mobile(reservation_id: str):
-        resp = client.request("POST", f"{reservations_bridge}/{reservation_id}/cancel")
-        return jsonify(resp.json()), resp.status_code
+        try:
+            resp = reservations_breaker.run(
+                lambda: client.request(
+                    "POST", f"{reservations_bridge}/{reservation_id}/cancel"
+                ),
+                http_response=True,
+            )
+            return jsonify(resp.json()), resp.status_code
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
 
     @app.get("/api/mobile/reservations/screening/<screening_id>")
     def list_reservations_by_screening_mobile(screening_id: str):
-        resp = client.request(
-            "GET", f"{reservations_bridge}/screening/{screening_id}"
-        )
-        return jsonify(resp.json()), resp.status_code
+        try:
+            resp = reservations_breaker.run(
+                lambda: client.request(
+                    "GET", f"{reservations_bridge}/screening/{screening_id}"
+                ),
+                http_response=True,
+            )
+            return jsonify(resp.json()), resp.status_code
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
 
     @app.post("/api/mobile/reservations/<reservation_id>/cancel")
     def cancel_reservation_mobile(reservation_id: str):
-        resp = client.request("POST", f"{reservations_bridge}/{reservation_id}/cancel")
-        return jsonify(resp.json()), resp.status_code
+        try:
+            resp = reservations_breaker.run(
+                lambda: client.request(
+                    "POST", f"{reservations_bridge}/{reservation_id}/cancel"
+                ),
+                http_response=True,
+            )
+            return jsonify(resp.json()), resp.status_code
+        except CircuitOpenError as exc:
+            return _circuit_open_response(exc.service)
 
     @app.errorhandler(Exception)
     def handle_error(exc):

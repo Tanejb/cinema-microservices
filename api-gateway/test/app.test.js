@@ -1,5 +1,6 @@
 const request = require("supertest");
 const { createApp } = require("../src/app");
+const { createCircuitBreaker } = require("../src/circuitBreaker");
 
 describe("api-gateway-web", () => {
   test("GET /health returns healthy", async () => {
@@ -133,5 +134,81 @@ describe("api-gateway-web", () => {
         }),
       }),
     );
+  });
+
+  test("REST circuit breaker opens after repeated 5xx from downstream", async () => {
+    const axiosClient = jest.fn().mockResolvedValue({
+      status: 503,
+      data: { success: false, message: "down" },
+    });
+
+    const app = createApp({
+      axiosClient,
+      reservationsClient: {},
+      circuitBreakers: {
+        movies: createCircuitBreaker({
+          name: "movies",
+          errorThreshold: 2,
+          resetTimeoutMs: 60000,
+        }),
+      },
+    });
+
+    const r1 = await request(app).get("/api/web/movies");
+    const r2 = await request(app).get("/api/web/movies");
+    const r3 = await request(app).get("/api/web/movies");
+
+    expect(r1.statusCode).toBe(503);
+    expect(r2.statusCode).toBe(503);
+    expect(r3.statusCode).toBe(503);
+    expect(r3.body.reason).toBe("circuit_open");
+    expect(axiosClient).toHaveBeenCalledTimes(2);
+  });
+
+  test("gRPC reservations circuit opens after repeated failures", async () => {
+    const err = new Error("unavailable");
+    const reservationsClient = {
+      createReservation: jest.fn().mockRejectedValue(err),
+      getReservationById: jest.fn(),
+      listReservationsByScreening: jest.fn(),
+      cancelReservation: jest.fn(),
+    };
+
+    const app = createApp({
+      axiosClient: jest.fn(),
+      reservationsClient,
+      circuitBreakers: {
+        reservations: createCircuitBreaker({
+          name: "reservations",
+          errorThreshold: 2,
+          resetTimeoutMs: 60000,
+        }),
+      },
+    });
+
+    const r1 = await request(app).post("/api/web/reservations").send({
+      screening_id: "s1",
+      seat_number: "A1",
+      user_name: "Test",
+      user_email: "test@example.com",
+    });
+    const r2 = await request(app).post("/api/web/reservations").send({
+      screening_id: "s1",
+      seat_number: "A2",
+      user_name: "Test",
+      user_email: "test@example.com",
+    });
+    const r3 = await request(app).post("/api/web/reservations").send({
+      screening_id: "s1",
+      seat_number: "A3",
+      user_name: "Test",
+      user_email: "test@example.com",
+    });
+
+    expect(r1.statusCode).toBe(502);
+    expect(r2.statusCode).toBe(502);
+    expect(r3.statusCode).toBe(503);
+    expect(r3.body.reason).toBe("circuit_open");
+    expect(reservationsClient.createReservation).toHaveBeenCalledTimes(2);
   });
 });

@@ -28,18 +28,19 @@ Sistem je razdeljen na več mikrostoritev, ki so odgovorne za posamezne poslovne
 
 ## Arhitektura sistema
 
-Sistem je sestavljen iz štirih mikrostoritev, API Gateway komponente in ene spletne aplikacije.
+Sistem je sestavljen iz štirih mikrostoritev, **dveh API Gateway** vstopnih točk (web in mobile) in spletne aplikacije.
 
 Glavne komponente sistema so:
 
-- API Gateway
+- API Gateway Web (`api-gateway`)
+- API Gateway Mobile (`api-gateway-mobile`)
 - User Service
 - Movies Service
 - Screenings Service
 - Reservations Service
 - Web Application
 
-Spletna aplikacija deluje kot uporabniški vmesnik, ki komunicira z API Gateway komponento. API Gateway predstavlja enotno vstopno točko v sistem in usmerja zahteve do ustreznih mikrostoritev.
+Spletna aplikacija deluje kot uporabniški vmesnik, ki za mikrostoritve običajno komunicira z **web API Gateway** (port 8080). Za druge odjemalce je na voljo še **mobile API Gateway** (port 8081); oba usmerjata promet do istih storitev.
 
 Vsaka mikrostoritev upravlja svojo domeno in podatke, kar omogoča večjo modularnost, ohlapno sklopljenost in lažje vzdrževanje sistema.
 
@@ -47,14 +48,30 @@ Vsaka mikrostoritev upravlja svojo domeno in podatke, kar omogoča večjo modula
 
 ## Mikrostoritve
 
-### API Gateway
+### API Gateway (Web in Mobile)
 
-API Gateway predstavlja enotno vstopno točko za dostop do mikrostoritev.
+Obstajata **dve** vstopni točki: **web** (Node.js, `http://localhost:8080`) in **mobile** (Flask, `http://localhost:8081`). Obe usmerjata promet do istih mikrostoritev; mobile dodatno ponuja združene in kompaktnejše odgovore za odjemalce.
 
-Njegove odgovornosti so:
-- sprejem zahtev iz spletne aplikacije
-- usmerjanje zahtev do ustreznih storitev
+Skupne odgovornosti:
+
+- sprejem in usmerjanje zahtev do mikrostoritev
 - poenoten dostop do sistema
+
+---
+
+### Odpornost in observabilnost na gatewayih
+
+Na **obeh** gatewayih sta implementirana naslednja vzorca (celotna razlaga, okoljske spremenljivke in navodila za ročno preverjanje):
+
+| Vzorec | Kratek pomen |
+|--------|----------------|
+| **Correlation ID** (`X-Request-Id`) | En identifikator zahteve skozi verigo klicev; olajša iskanje istega zahtevka v logih več storitev. |
+| **Circuit breaker** | Po zaporednih neuspehih začasno preneha klicati problematičen downstream (`503`, `Retry-After`), da se storitev in omrežje ne preobremenita. |
+
+Podrobna dokumentacija:
+
+- [api-gateway/README.md](api-gateway/README.md) — web gateway (vključno z gRPC bridge za rezervacije)
+- [api-gateway-mobile/README.md](api-gateway-mobile/README.md) — mobile gateway
 
 ---
 
@@ -188,8 +205,9 @@ Repozitorij je organiziran po principu "screaming architecture", kjer imena map 
 ```text
 cinema-microservices/
 │
-├── api-gateway/      # enotna vstopna točka v sistem
-├── users/     # mikrostoritev za upravljanje uporabnikov
+├── api-gateway/          # web API gateway (Node.js)
+├── api-gateway-mobile/   # mobile API gateway (Flask)
+├── users/                # mikrostoritev za upravljanje uporabnikov
 ├── movies/           # mikrostoritev za upravljanje filmov
 ├── screenings/       # mikrostoritev za termine predvajanj
 ├── reservations/     # mikrostoritev za rezervacije sedežev

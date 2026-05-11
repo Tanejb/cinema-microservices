@@ -1,4 +1,5 @@
 from app import create_app
+from app.circuit_breaker import CircuitBreaker
 
 
 class FakeResponse:
@@ -113,3 +114,33 @@ def test_delete_reservation_soft_delete():
     r = client.delete("/api/mobile/reservations/r1")
     assert r.status_code == 200
     assert r.get_json()["data"]["status"] == "cancelled"
+
+
+class FlakyMoviesClient(FakeRestClient):
+    def __init__(self):
+        super().__init__()
+        self.calls = 0
+
+    def request(self, method, url, **kwargs):
+        self.calls += 1
+        if "3001/api/movies" in url and self.calls <= 2:
+            return FakeResponse(503, {"success": False, "message": "down"})
+        return FakeResponse(200, {"success": True, "data": []})
+
+
+def test_movies_circuit_opens_after_two_503_responses():
+    fake = FlakyMoviesClient()
+    br = CircuitBreaker("movies", error_threshold=2, reset_timeout_ms=60000)
+    app = create_app(rest_client=fake, circuit_breakers={"movies": br})
+    app.config["TESTING"] = True
+    client = app.test_client()
+
+    r1 = client.get("/api/mobile/movies")
+    r2 = client.get("/api/mobile/movies")
+    r3 = client.get("/api/mobile/movies")
+
+    assert r1.status_code == 503
+    assert r2.status_code == 503
+    assert r3.status_code == 503
+    assert r3.get_json()["reason"] == "circuit_open"
+    assert fake.calls == 2
