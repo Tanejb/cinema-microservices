@@ -22,8 +22,12 @@ spec:
         - name: web-host
           image: docker.io/tanej666/cinema-frontend-host:latest
           imagePullPolicy: Always
+          # Old images contain /app/vite.config.js; vite writes a .timestamp next to
+          # the config which the random OpenShift UID cannot do in /app -> EACCES.
+          # Point vite at an empty config in /tmp instead (writable for all).
+          command: ["sh", "-c"]
+          args: ["echo '' > /tmp/vite.config.js && cd /app && exec npx vite preview --config /tmp/vite.config.js --host 0.0.0.0 --port 4310 --strictPort"]
           env:
-            # Vite preview host check (config may be absent in older images)
             - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
               value: .openshiftapps.com
           ports:
@@ -95,6 +99,8 @@ spec:
         - name: web-movies
           image: docker.io/tanej666/cinema-frontend-movies:latest
           imagePullPolicy: Always
+          command: ["sh", "-c"]
+          args: ["echo '' > /tmp/vite.config.js && cd /app && exec npx vite preview --config /tmp/vite.config.js --host 0.0.0.0 --port 4311 --strictPort"]
           env:
             - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
               value: .openshiftapps.com
@@ -163,6 +169,8 @@ spec:
         - name: web-users
           image: docker.io/tanej666/cinema-frontend-users:latest
           imagePullPolicy: Always
+          command: ["sh", "-c"]
+          args: ["echo '' > /tmp/vite.config.js && cd /app && exec npx vite preview --config /tmp/vite.config.js --host 0.0.0.0 --port 4312 --strictPort"]
           env:
             - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
               value: .openshiftapps.com
@@ -231,6 +239,8 @@ spec:
         - name: web-screenings
           image: docker.io/tanej666/cinema-frontend-screenings:latest
           imagePullPolicy: Always
+          command: ["sh", "-c"]
+          args: ["echo '' > /tmp/vite.config.js && cd /app && exec npx vite preview --config /tmp/vite.config.js --host 0.0.0.0 --port 4313 --strictPort"]
           env:
             - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
               value: .openshiftapps.com
@@ -299,6 +309,8 @@ spec:
         - name: web-reservations
           image: docker.io/tanej666/cinema-frontend-reservations:latest
           imagePullPolicy: Always
+          command: ["sh", "-c"]
+          args: ["echo '' > /tmp/vite.config.js && cd /app && exec npx vite preview --config /tmp/vite.config.js --host 0.0.0.0 --port 4314 --strictPort"]
           env:
             - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
               value: .openshiftapps.com
