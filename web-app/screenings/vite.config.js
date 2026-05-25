@@ -22,6 +22,6 @@ export default defineConfig({
     host: true,
     port: 4313,
     strictPort: true,
-    allowedHosts: true,
+    allowedHosts: ['.openshiftapps.com', '.openshift.com', 'localhost'],
   },
 })
