@@ -32,5 +32,11 @@ export default defineConfig(({ mode }) => {
     port: 4310,
     strictPort: true,
   },
+  preview: {
+    host: true,
+    port: 4310,
+    strictPort: true,
+    allowedHosts: true,
+  },
   }
 })
