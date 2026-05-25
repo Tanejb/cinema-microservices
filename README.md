@@ -221,6 +221,12 @@ Vsaka mikrostoritev vsebuje svojo poslovno logiko, API sloj in infrastrukturo.
 
 ---
 
+## Namestitev na OpenShift
+
+Manifesti in navodila po korakih: **[openshift/README.md](openshift/README.md)** (Developer Sandbox, namespace `cinema`).
+
+---
+
 ## Lokalni zagon vseh storitev
 
 Za zagon celotnega sistema z eno MongoDB instanco in enim RabbitMQ brokerjem uporabite root `docker-compose.yml`.

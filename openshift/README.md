@@ -1,0 +1,107 @@
+# Cinema Microservices na OpenShift
+
+Namestitev informacijskega sistema na **Red Hat OpenShift** (Kubernetes). Manifesti v tej mapi ustrezajo lokalnemu `docker-compose.yml`.
+
+## Predpogoji
+
+- Račun [OpenShift Developer Sandbox](https://developers.redhat.com/developer-sandbox)
+- CLI **`oc`** ([navodila](https://docs.openshift.com/cli-install/installing-cli.html))
+- (Opcijsko) **`kubectl`** — `oc` ga vključuje
+
+## Korak 0 — Prijava in projekt (Developer Sandbox)
+
+Na **OpenShift Developer Sandbox** uporabi **osebni projekt**, npr. `tanejb-dev` (ne ustvarjaj novega `cinema`, če sandbox ne dovoli).
+
+### Možnost A — Terminal v brskalniku (priporočeno na začetku)
+
+1. Konzola → **OpenShift command line terminal** (ikona terminala).
+2. Project: **`tanejb-dev`** → **Start**.
+3. V terminalu že velja `oc` in pravi projekt.
+
+### Možnost B — Lokalni `oc` na Windows
+
+1. **Copy login command** iz konzole → PowerShell.
+2. `oc project tanejb-dev`
+
+Preveri:
+
+```bash
+oc whoami
+oc project
+```
+
+## Korak 1 — Infrastruktura (MongoDB + RabbitMQ)
+
+Manifesti so nastavljeni na namespace **`tanejb-dev`**. Če imaš drug sandbox projekt, v `kustomization.yaml` spremeni `namespace:`.
+
+### V web terminalu (po git clone v sandboxu)
+
+Če repozitorij še ni v terminalu, najprej naloži YAML (npr. kopija vsebine ali `git clone` tvojega repoja, če je javen).
+
+Iz korena repozitorija:
+
+```bash
+oc apply -k openshift/
+```
+
+### Preverjanje
+
+```bash
+oc get pods -n tanejb-dev
+oc get svc -n tanejb-dev
+oc get pvc -n tanejb-dev
+```
+
+Pričakovano (po nekaj minutah):
+
+| Pod | Service | Port |
+|-----|---------|------|
+| `mongo-...` | `mongo` | 27017 |
+| `rabbitmq-...` | `rabbitmq` | 5672, 15672 |
+
+Logi:
+
+```bash
+oc logs -n tanejb-dev deployment/mongo --tail=30
+oc logs -n tanejb-dev deployment/rabbitmq --tail=30
+```
+
+Test Mongo iz začasnega poda:
+
+```bash
+oc run -n tanejb-dev mongo-test --rm -it --restart=Never \
+  --image=docker.io/library/mongo:7 -- mongosh mongodb://mongo:27017 --eval "db.adminCommand('ping')"
+```
+
+### Če PVC za Mongo ostane `Pending`
+
+Developer Sandbox včasih omeji shrambo. Možnosti:
+
+1. Počakaj 2–5 min (dodelitev storage class).
+2. V konzoli preveri **Storage** / kvote projekta.
+3. Za demo brez persistence: odstrani PVC deployment in uporabi `emptyDir` (vprašaj asistenta za `mongo-emptydir` varianto).
+
+### Varnost (Korak 1)
+
+- Gesla RabbitMQ so v **Secret** `cinema-secrets` (ne v ConfigMap).
+- Skupna neskalna konfiguracija je v **ConfigMap** `cinema-common` (URI brez gesla, kot lokalno).
+
+## Naslednji koraki (v pripravi)
+
+| Korak | Vsebina |
+|-------|---------|
+| 2 | Mikrostoritve (movies, users, screenings, reservations, worker) |
+| 3 | API Gateway web + mobile + Route |
+| 4 | Frontend (web-host + MFE) |
+| 5 | HPA, NetworkPolicy, dokumentacija za oddajo |
+
+Docker slike (CI): namespace `tanej666` na DockerHub — glej korenski `README.md`.
+
+## Uporabni ukazi
+
+```bash
+oc describe pod -n tanejb-dev <ime-poda>
+oc get events -n tanejb-dev --sort-by='.lastTimestamp'
+```
+
+Datoteka `00-namespace.yaml` je opcijska (lasten cluster); na Sandboxu **ne** uporabljaj — projekt `tanejb-dev` že obstaja.
