@@ -22,6 +22,10 @@ spec:
         - name: web-host
           image: docker.io/tanej666/cinema-frontend-host:latest
           imagePullPolicy: Always
+          env:
+            # Vite preview host check (config may be absent in older images)
+            - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+              value: .openshiftapps.com
           ports:
             - containerPort: 4310
               name: http
@@ -91,6 +95,9 @@ spec:
         - name: web-movies
           image: docker.io/tanej666/cinema-frontend-movies:latest
           imagePullPolicy: Always
+          env:
+            - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+              value: .openshiftapps.com
           ports:
             - containerPort: 4311
               name: http
@@ -156,6 +163,9 @@ spec:
         - name: web-users
           image: docker.io/tanej666/cinema-frontend-users:latest
           imagePullPolicy: Always
+          env:
+            - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+              value: .openshiftapps.com
           ports:
             - containerPort: 4312
               name: http
@@ -221,6 +231,9 @@ spec:
         - name: web-screenings
           image: docker.io/tanej666/cinema-frontend-screenings:latest
           imagePullPolicy: Always
+          env:
+            - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+              value: .openshiftapps.com
           ports:
             - containerPort: 4313
               name: http
@@ -286,6 +299,9 @@ spec:
         - name: web-reservations
           image: docker.io/tanej666/cinema-frontend-reservations:latest
           imagePullPolicy: Always
+          env:
+            - name: __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+              value: .openshiftapps.com
           ports:
             - containerPort: 4314
               name: http

@@ -14,6 +14,7 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+ENV __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=.openshiftapps.com
 COPY package*.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
