@@ -64,9 +64,10 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
       volumes:
+        # Developer Sandbox: PVC (gp3) often stays Pending — use emptyDir for demo.
+        # For persistent Mongo, use infra/mongo-pvc.yaml + switch volume to PVC (see README).
         - name: data
-          persistentVolumeClaim:
-            claimName: mongo-data
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

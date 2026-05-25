@@ -18,6 +18,14 @@ Na **OpenShift Developer Sandbox** uporabi **osebni projekt**, npr. `tanejb-dev`
 2. Project: **`tanejb-dev`** → **Start**.
 3. V terminalu že velja `oc` in pravi projekt.
 
+**Nov terminal po timeoutu** — repozitorij je običajno v `~/cinema-microservices` (ne `~/cinema-microservices/cinema-microservices`):
+
+```bash
+cd ~/cinema-microservices
+git pull
+oc project tanejb-dev
+```
+
 ### Možnost B — Lokalni `oc` na Windows
 
 1. **Copy login command** iz konzole → PowerShell.
@@ -87,16 +95,29 @@ Pogosti vzroki:
    oc delete pvc mongo-data
    oc apply -f openshift/infra/mongo-pvc.yaml
    oc apply -f openshift/infra/mongo.yaml
+   oc scale deployment/mongo --replicas=1
    oc get pods -w
    ```
 
-### Če PVC za Mongo ostane `Pending`
+Po `oc scale deployment/mongo --replicas=0` moraš **vedno** spet `oc scale deployment/mongo --replicas=1` (ali `oc apply` deployment z `replicas: 1`), sicer Mongo poda ni in **movies-service** gre v CrashLoopBackOff.
 
-Developer Sandbox včasih omeji shrambo. Možnosti:
+### Če PVC za Mongo ostane `Pending` (npr. `gp3`, 0 podov)
 
-1. Počakaj 2–5 min (dodelitev storage class).
-2. V konzoli preveri **Storage** / kvote projekta.
-3. Za demo brez persistence: odstrani PVC deployment in uporabi `emptyDir` (vprašaj asistenta za `mongo-emptydir` varianto).
+Če `oc get pvc mongo-data` kaže **Pending**, Mongo pod **ne bo nikoli ustvarjen** (`oc get deployment mongo` → 0/1, `No resources found` za `app=mongo`).
+
+**Privzeta rešitev v repozitoriju:** `infra/mongo.yaml` uporablja **`emptyDir`** (brez PVC) — primerno za Developer Sandbox.
+
+```bash
+oc delete pvc mongo-data --ignore-not-found
+git pull
+oc apply -f openshift/infra/mongo.yaml
+oc scale deployment/mongo --replicas=1
+oc get pods -l app=mongo
+```
+
+Podatki v Mongo se ob izbrisu poda pobrišejo — za laboratorij in demo je to sprejemljivo.
+
+Za trajno shrambo na lastnem clusterju: odkomentiraj `infra/mongo-pvc.yaml` v `kustomization.yaml` in v `mongo.yaml` zamenjaj `emptyDir` z `persistentVolumeClaim`.
 
 ### Varnost (Korak 1)
 

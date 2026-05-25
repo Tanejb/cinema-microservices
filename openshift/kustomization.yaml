@@ -5,7 +5,7 @@ namespace: tanejb-dev
 resources:
   - 01-configmap-common.yaml
   - 02-secret.yaml
-  - infra/mongo-pvc.yaml
+  # mongo-pvc.yaml optional (often Pending on Sandbox storage class gp3)
   - infra/mongo.yaml
   - infra/rabbitmq.yaml
   - services/movies.yaml
