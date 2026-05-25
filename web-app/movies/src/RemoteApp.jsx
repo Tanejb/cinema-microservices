@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const API_URL = 'http://localhost:8080/api/web/movies'
+const API_URL = `${(import.meta.env.VITE_API_GATEWAY_WEB || 'http://localhost:8080').replace(/\/$/, '')}/api/web/movies`
 
 const initialMovie = {
   title: 'Inception',

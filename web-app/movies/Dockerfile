@@ -5,6 +5,8 @@ RUN npm ci
 
 FROM node:20-alpine AS build
 WORKDIR /app
+ARG VITE_API_GATEWAY_WEB=http://localhost:8080
+ENV VITE_API_GATEWAY_WEB=$VITE_API_GATEWAY_WEB
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

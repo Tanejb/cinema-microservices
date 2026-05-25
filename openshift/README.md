@@ -197,6 +197,58 @@ curl -k https://$(oc get route api-gateway-web -o jsonpath='{.spec.host}')/healt
 curl -k https://$(oc get route api-gateway-mobile -o jsonpath='{.spec.host}')/health
 ```
 
+## Korak 4 — Web UI (micro frontends)
+
+Frontend slike morajo biti **zgrajene z javnimi Route URL-ji** (ne `localhost`), ker brskalnik naloži `remoteEntry.js` in API klice iz interneta.
+
+### 4a) Deploy Route + podi (če še niso)
+
+```bash
+cd ~/cinema-microservices
+git pull
+oc apply -f openshift/frontend/web-frontend.yaml
+oc get routes | grep web-
+```
+
+### 4b) Zgradi slike z OpenShift URL-ji (na PC z Dockerjem)
+
+1. Kopiraj `openshift/frontend/build-env.example` → `build-env.local`
+2. V `build-env.local` nastavi hoste iz `oc get routes` (api-gateway-web + web-movies/users/screenings/reservations).
+3. Zgradi in push (primer za host):
+
+```powershell
+cd web-app/host
+docker build --build-arg VITE_REMOTE_MOVIES=https://web-movies-....apps.../assets/remoteEntry.js `
+  --build-arg VITE_REMOTE_USERS=https://web-users-....apps.../assets/remoteEntry.js `
+  --build-arg VITE_REMOTE_SCREENINGS=https://web-screenings-....apps.../assets/remoteEntry.js `
+  --build-arg VITE_REMOTE_RESERVATIONS=https://web-reservations-....apps.../assets/remoteEntry.js `
+  -t tanej666/cinema-frontend-host:latest .
+docker push tanej666/cinema-frontend-host:latest
+```
+
+Za vsak MFE (movies/users/screenings/reservations):
+
+```powershell
+docker build --build-arg VITE_API_GATEWAY_WEB=https://api-gateway-web-....apps... `
+  -t tanej666/cinema-frontend-movies:latest .
+docker push tanej666/cinema-frontend-movies:latest
+```
+
+4. V sandboxu restart:
+
+```bash
+oc rollout restart deployment/web-host deployment/web-movies deployment/web-users deployment/web-screenings deployment/web-reservations
+oc get pods | grep web-
+```
+
+### 4c) Odpri UI
+
+```text
+https://web-host-<namespace>.apps.<cluster-domain>/
+```
+
+Če sandbox zavrne preveč podov, začasno deploy samo `web-host` + `web-movies` (dva MFE modula).
+
 Docker slike (CI): namespace `tanej666` na DockerHub — glej korenski `README.md`.
 
 ## Uporabni ukazi

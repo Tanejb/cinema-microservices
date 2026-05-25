@@ -1,0 +1,331 @@
+# Micro-frontend host + remotes. Images must be built with public Route URLs (see build-env.example).
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-host
+  namespace: tanejb-dev
+  labels:
+    app: web-host
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-host
+  template:
+    metadata:
+      labels:
+        app: web-host
+    spec:
+      containers:
+        - name: web-host
+          image: docker.io/tanej666/cinema-frontend-host:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4310
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4310
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-host
+  namespace: tanejb-dev
+  labels:
+    app: web-host
+spec:
+  selector:
+    app: web-host
+  ports:
+    - name: http
+      port: 4310
+      targetPort: 4310
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-host
+  namespace: tanejb-dev
+  labels:
+    app: web-host
+spec:
+  to:
+    kind: Service
+    name: web-host
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-movies
+  namespace: tanejb-dev
+  labels:
+    app: web-movies
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-movies
+  template:
+    metadata:
+      labels:
+        app: web-movies
+    spec:
+      containers:
+        - name: web-movies
+          image: docker.io/tanej666/cinema-frontend-movies:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4311
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /assets/remoteEntry.js
+              port: 4311
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-movies
+  namespace: tanejb-dev
+spec:
+  selector:
+    app: web-movies
+  ports:
+    - name: http
+      port: 4311
+      targetPort: 4311
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-movies
+  namespace: tanejb-dev
+spec:
+  to:
+    kind: Service
+    name: web-movies
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-users
+  namespace: tanejb-dev
+  labels:
+    app: web-users
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-users
+  template:
+    metadata:
+      labels:
+        app: web-users
+    spec:
+      containers:
+        - name: web-users
+          image: docker.io/tanej666/cinema-frontend-users:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4312
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /assets/remoteEntry.js
+              port: 4312
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-users
+  namespace: tanejb-dev
+spec:
+  selector:
+    app: web-users
+  ports:
+    - name: http
+      port: 4312
+      targetPort: 4312
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-users
+  namespace: tanejb-dev
+spec:
+  to:
+    kind: Service
+    name: web-users
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-screenings
+  namespace: tanejb-dev
+  labels:
+    app: web-screenings
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-screenings
+  template:
+    metadata:
+      labels:
+        app: web-screenings
+    spec:
+      containers:
+        - name: web-screenings
+          image: docker.io/tanej666/cinema-frontend-screenings:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4313
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /assets/remoteEntry.js
+              port: 4313
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-screenings
+  namespace: tanejb-dev
+spec:
+  selector:
+    app: web-screenings
+  ports:
+    - name: http
+      port: 4313
+      targetPort: 4313
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-screenings
+  namespace: tanejb-dev
+spec:
+  to:
+    kind: Service
+    name: web-screenings
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-reservations
+  namespace: tanejb-dev
+  labels:
+    app: web-reservations
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-reservations
+  template:
+    metadata:
+      labels:
+        app: web-reservations
+    spec:
+      containers:
+        - name: web-reservations
+          image: docker.io/tanej666/cinema-frontend-reservations:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4314
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /assets/remoteEntry.js
+              port: 4314
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-reservations
+  namespace: tanejb-dev
+spec:
+  selector:
+    app: web-reservations
+  ports:
+    - name: http
+      port: 4314
+      targetPort: 4314
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-reservations
+  namespace: tanejb-dev
+spec:
+  to:
+    kind: Service
+    name: web-reservations
+  port:
+    targetPort: http
+  tls:
+    termination: edge

@@ -5,6 +5,14 @@ RUN npm ci
 
 FROM node:20-alpine AS build
 WORKDIR /app
+ARG VITE_REMOTE_MOVIES=http://localhost:4311/assets/remoteEntry.js
+ARG VITE_REMOTE_USERS=http://localhost:4312/assets/remoteEntry.js
+ARG VITE_REMOTE_SCREENINGS=http://localhost:4313/assets/remoteEntry.js
+ARG VITE_REMOTE_RESERVATIONS=http://localhost:4314/assets/remoteEntry.js
+ENV VITE_REMOTE_MOVIES=$VITE_REMOTE_MOVIES
+ENV VITE_REMOTE_USERS=$VITE_REMOTE_USERS
+ENV VITE_REMOTE_SCREENINGS=$VITE_REMOTE_SCREENINGS
+ENV VITE_REMOTE_RESERVATIONS=$VITE_REMOTE_RESERVATIONS
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

@@ -1,0 +1,9 @@
+# Copy to build-env.local, fill with YOUR Route hosts (oc get routes), then build images.
+# Example host suffix: apps.rm3.7wse.p1.openshiftapps.com
+
+VITE_API_GATEWAY_WEB=https://api-gateway-web-tanejb-dev.apps.rm3.7wse.p1.openshiftapps.com
+
+VITE_REMOTE_MOVIES=https://web-movies-tanejb-dev.apps.rm3.7wse.p1.openshiftapps.com/assets/remoteEntry.js
+VITE_REMOTE_USERS=https://web-users-tanejb-dev.apps.rm3.7wse.p1.openshiftapps.com/assets/remoteEntry.js
+VITE_REMOTE_SCREENINGS=https://web-screenings-tanejb-dev.apps.rm3.7wse.p1.openshiftapps.com/assets/remoteEntry.js
+VITE_REMOTE_RESERVATIONS=https://web-reservations-tanejb-dev.apps.rm3.7wse.p1.openshiftapps.com/assets/remoteEntry.js
