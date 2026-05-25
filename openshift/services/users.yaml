@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: tanejb-dev
+  labels:
+    app: users-service
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+        app.kubernetes.io/part-of: cinema-microservices
+    spec:
+      containers:
+        - name: users-service
+          image: docker.io/tanej666/cinema-users-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3002
+              name: http
+          env:
+            - name: PORT
+              value: "3002"
+            - name: MONGODB_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: MONGODB_URI
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: USERS_DB_NAME
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: LOG_LEVEL
+            - name: RABBITMQ_ENABLED
+              value: "true"
+            - name: RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: RABBITMQ_HOST
+            - name: RABBITMQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: RABBITMQ_PORT
+            - name: RABBITMQ_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: RABBITMQ_QUEUE
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cinema-secrets
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cinema-secrets
+                  key: RABBITMQ_PASSWORD
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 40
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+  namespace: tanejb-dev
+  labels:
+    app: users-service
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  selector:
+    app: users-service
+  ports:
+    - name: http
+      port: 3002
+      targetPort: 3002

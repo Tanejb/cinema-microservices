@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: screenings-service
+  namespace: tanejb-dev
+  labels:
+    app: screenings-service
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: screenings-service
+  template:
+    metadata:
+      labels:
+        app: screenings-service
+        app.kubernetes.io/part-of: cinema-microservices
+    spec:
+      containers:
+        - name: screenings-service
+          image: docker.io/tanej666/cinema-screenings-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3003
+              name: http
+          env:
+            - name: PORT
+              value: "3003"
+            - name: MONGODB_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: MONGODB_URI
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: SCREENINGS_DB_NAME
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: LOG_LEVEL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 40
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: screenings-service
+  namespace: tanejb-dev
+  labels:
+    app: screenings-service
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  selector:
+    app: screenings-service
+  ports:
+    - name: http
+      port: 3003
+      targetPort: 3003

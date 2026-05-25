@@ -8,3 +8,8 @@ resources:
   - infra/mongo-pvc.yaml
   - infra/mongo.yaml
   - infra/rabbitmq.yaml
+  - services/movies.yaml
+  - services/users.yaml
+  - services/screenings.yaml
+  - services/reservations.yaml
+  - services/users-worker.yaml

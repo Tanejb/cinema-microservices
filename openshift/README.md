@@ -86,11 +86,38 @@ Developer Sandbox včasih omeji shrambo. Možnosti:
 - Gesla RabbitMQ so v **Secret** `cinema-secrets` (ne v ConfigMap).
 - Skupna neskalna konfiguracija je v **ConfigMap** `cinema-common` (URI brez gesla, kot lokalno).
 
-## Naslednji koraki (v pripravi)
+## Korak 2 — Mikrostoritve
+
+Po uspešnem Koraku 1 (mongo + rabbitmq **1/1 Running**):
+
+```bash
+cd ~/cinema-microservices/cinema-microservices   # ali tvoja pot po clone
+git pull
+oc apply -k openshift/
+oc get pods
+```
+
+Slike: DockerHub `tanej666/cinema-*:latest` (CI ob push na `main`).
+
+| Pod | Service | Port |
+|-----|---------|------|
+| `movies-service` | `movies-service` | 3001 |
+| `users-service` | `users-service` | 3002 |
+| `screenings-service` | `screenings-service` | 3003 |
+| `reservations-service` | `reservations-service` | 50051 (gRPC) |
+| `users-worker` | — | (brez Service) |
+
+Preverjanje health (iz terminala):
+
+```bash
+oc run curl-test --rm -it --restart=Never --image=curlimages/curl:latest -- \
+  curl -s http://movies-service:3001/health
+```
+
+## Naslednji koraki
 
 | Korak | Vsebina |
 |-------|---------|
-| 2 | Mikrostoritve (movies, users, screenings, reservations, worker) |
 | 3 | API Gateway web + mobile + Route |
 | 4 | Frontend (web-host + MFE) |
 | 5 | HPA, NetworkPolicy, dokumentacija za oddajo |

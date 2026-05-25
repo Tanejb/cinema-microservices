@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-worker
+  namespace: tanejb-dev
+  labels:
+    app: users-worker
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-worker
+  template:
+    metadata:
+      labels:
+        app: users-worker
+        app.kubernetes.io/part-of: cinema-microservices
+    spec:
+      containers:
+        - name: users-worker
+          image: docker.io/tanej666/cinema-users-worker:latest
+          imagePullPolicy: Always
+          command: ["python", "-m", "worker"]
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: MONGODB_URI
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: USERS_DB_NAME
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: LOG_LEVEL
+            - name: RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: RABBITMQ_HOST
+            - name: RABBITMQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: RABBITMQ_PORT
+            - name: RABBITMQ_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: cinema-common
+                  key: RABBITMQ_QUEUE
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cinema-secrets
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cinema-secrets
+                  key: RABBITMQ_PASSWORD
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
