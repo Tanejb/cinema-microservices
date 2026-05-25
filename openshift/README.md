@@ -73,6 +73,23 @@ oc run -n tanejb-dev mongo-test --rm -it --restart=Never \
   --image=docker.io/library/mongo:7 -- mongosh mongodb://mongo:27017 --eval "db.adminCommand('ping')"
 ```
 
+### Mongo: CrashLoopBackOff po `rollout restart`
+
+Pogosti vzroki:
+
+1. **Dva poda + en PVC (ReadWriteOnce)** — privzeti RollingUpdate ustvari nov pod, medtem stari še teče. Rešitev: v manifestu je `strategy: type: Recreate`.
+2. **Probe timeout** — uporabljamo `tcpSocket` namesto `mongosh exec`.
+3. **Poškodovani podatki na PVC** — po neuspešnih zagonih:
+
+   ```bash
+   oc scale deployment/mongo --replicas=0
+   oc delete pod -l app=mongo
+   oc delete pvc mongo-data
+   oc apply -f openshift/infra/mongo-pvc.yaml
+   oc apply -f openshift/infra/mongo.yaml
+   oc get pods -w
+   ```
+
 ### Če PVC za Mongo ostane `Pending`
 
 Developer Sandbox včasih omeji shrambo. Možnosti:

@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/part-of: cinema-microservices
 spec:
   replicas: 1
+  # RWO volume: only one pod may mount mongo-data at a time.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: mongo
@@ -17,9 +20,16 @@ spec:
         app: mongo
         app.kubernetes.io/part-of: cinema-microservices
     spec:
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: mongo
           image: docker.io/library/mongo:7
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 27017
               name: mongo
@@ -29,10 +39,10 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 384Mi
+              memory: 256Mi
             limits:
               cpu: 500m
-              memory: 1Gi
+              memory: 768Mi
           # TCP probes: mongosh exec often times out (default 1s) on sandbox nodes.
           startupProbe:
             tcpSocket:
