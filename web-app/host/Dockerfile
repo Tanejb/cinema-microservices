@@ -24,9 +24,8 @@ ENV __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=.openshiftapps.com
 COPY package*.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/vite.config.js ./vite.config.js
-# OpenShift runs as arbitrary UID in group 0; Vite must write cache next to vite.config.js
-RUN chgrp -R 0 /app && chmod -R g+rwX /app
-USER 1001
+# Intentionally do NOT copy vite.config.js: on OpenShift the random UID cannot write
+# the timestamp cache that vite creates next to the config. allowedHosts is supplied
+# via __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS env var instead.
 EXPOSE 4310
 CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4310"]

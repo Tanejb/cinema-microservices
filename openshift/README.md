@@ -250,9 +250,9 @@ Docker slike (CI): namespace `tanej666` na DockerHub — glej korenski `README.m
 
 ### Frontend: "Blocked request" / `EACCES` na `vite.config.js.timestamp`
 
-Vite preview zavrne Route hostname brez `allowedHosts` (env `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=.openshiftapps.com` ali `vite.config.js`).
+Vite preview zavrne Route hostname brez dovoljenja. Rešitev v runtime: env var `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=.openshiftapps.com` (že nastavljen v `web-frontend.yaml`).
 
-Če je v sliki `vite.config.js`, Vite ob zagonu zapiše cache v `/app` — na OpenShiftu mora biti `/app` zapisljiv za skupino 0 (`chgrp 0` + `chmod g+rwX` v Dockerfile, `USER 1001`). Brez tega: `EACCES: permission denied, open '/app/vite.config.js.timestamp-...'`.
+**Pomembno:** v runtime stage Dockerfile **NE** kopiraj `vite.config.js`. Vite preview ob zagonu zapiše timestamp cache poleg konfiguracije, OpenShift pa teče kot naključen UID brez pravic pisanja v `/app` → `EACCES`. Brez `vite.config.js` Vite uporabi privzete vrednosti + env var.
 
 **Vrstni red na PC:** najprej `git pull` (Dockerfile z `COPY vite.config.js`), šele nato `.\openshift\frontend\build-frontend.ps1`.
 
