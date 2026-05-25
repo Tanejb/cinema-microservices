@@ -108,16 +108,22 @@ Po `oc scale deployment/mongo --replicas=0` moraš **vedno** spet `oc scale depl
 **Privzeta rešitev v repozitoriju:** `infra/mongo.yaml` uporablja **`emptyDir`** (brez PVC) — primerno za Developer Sandbox.
 
 ```bash
-oc delete pvc mongo-data --ignore-not-found
 git pull
+oc apply -f openshift/infra/mongo-pvc.yaml
 oc apply -f openshift/infra/mongo.yaml
 oc scale deployment/mongo --replicas=1
 oc get pods -l app=mongo
 ```
 
-Podatki v Mongo se ob izbrisu poda pobrišejo — za laboratorij in demo je to sprejemljivo.
+Če PVC ostane `Pending` predolgo, preklopi na `emptyDir` varianto (demo brez persistence).
 
-Za trajno shrambo na lastnem clusterju: odkomentiraj `infra/mongo-pvc.yaml` v `kustomization.yaml` in v `mongo.yaml` zamenjaj `emptyDir` z `persistentVolumeClaim`.
+Fallback na `emptyDir`:
+
+```bash
+oc scale deployment/mongo --replicas=0
+oc patch deployment mongo --type='json' -p='[{"op":"replace","path":"/spec/template/spec/volumes/0","value":{"name":"data","emptyDir":{}}}]'
+oc scale deployment/mongo --replicas=1
+```
 
 ### Varnost (Korak 1)
 
