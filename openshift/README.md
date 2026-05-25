@@ -212,8 +212,13 @@ oc get routes | grep web-
 
 ### 4b) Zgradi slike z OpenShift URL-ji (na PC z Dockerjem)
 
-1. Kopiraj `openshift/frontend/build-env.example` → `build-env.local`
-2. V `build-env.local` nastavi hoste iz `oc get routes` (api-gateway-web + web-movies/users/screenings/reservations).
+1. Kopiraj env (vsebina je že za tvoj sandbox `tanejb-dev`):
+
+   ```bash
+   cp openshift/frontend/build-env.example openshift/frontend/build-env.local
+   ```
+
+   V `build-env.local` pusti samo vrstice `VITE_...` (brez `#` komentarjev iz example, če jih kopiraš zgoraj).
 3. Zgradi in push (primer za host):
 
 ```powershell
