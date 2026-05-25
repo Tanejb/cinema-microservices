@@ -1,12 +1,12 @@
-# Zgradi in pusha vse frontend slike z URL-ji iz build-env.local
-# Zahteva: Docker Desktop, prijava na DockerHub (docker login)
+# Build and push all frontend images using build-env.local
+# Requires: Docker Desktop, docker login
 
 $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path "$PSScriptRoot\..\..").Path
 $EnvFile = Join-Path $PSScriptRoot "build-env.local"
 
 if (-not (Test-Path $EnvFile)) {
-    Write-Error "Manjka $EnvFile — kopiraj iz build-env.example"
+    Write-Error "Missing build-env.local - copy from build-env.example"
 }
 
 $vars = @{}
@@ -28,7 +28,7 @@ $required = @(
 )
 foreach ($key in $required) {
     if (-not $vars.ContainsKey($key)) {
-        Write-Error "V build-env.local manjka $key"
+        Write-Error "Missing $key in build-env.local"
     }
 }
 
@@ -42,14 +42,15 @@ function Build-And-Push {
     $argList = @()
     foreach ($k in $BuildArgs.Keys) {
         $argList += "--build-arg"
-        $argList += "${k}=$($BuildArgs[$k])"
+        $argList += ($k + "=" + $BuildArgs[$k])
     }
-    Write-Host "`n=== $Name ===" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "=== $Name ===" -ForegroundColor Cyan
     Push-Location (Join-Path $Root $Context)
     try {
-        & docker build @argList -t "${Image}:latest" .
+        & docker build @argList -t ($Image + ":latest") .
         if ($LASTEXITCODE -ne 0) { throw "docker build failed" }
-        & docker push "${Image}:latest"
+        & docker push ($Image + ":latest")
         if ($LASTEXITCODE -ne 0) { throw "docker push failed" }
     }
     finally {
@@ -58,21 +59,23 @@ function Build-And-Push {
 }
 
 Build-And-Push "web-host" "web-app/host" "tanej666/cinema-frontend-host" @{
-    VITE_REMOTE_MOVIES      = $vars.VITE_REMOTE_MOVIES
-    VITE_REMOTE_USERS       = $vars.VITE_REMOTE_USERS
-    VITE_REMOTE_SCREENINGS  = $vars.VITE_REMOTE_SCREENINGS
+    VITE_REMOTE_MOVIES       = $vars.VITE_REMOTE_MOVIES
+    VITE_REMOTE_USERS        = $vars.VITE_REMOTE_USERS
+    VITE_REMOTE_SCREENINGS   = $vars.VITE_REMOTE_SCREENINGS
     VITE_REMOTE_RESERVATIONS = $vars.VITE_REMOTE_RESERVATIONS
 }
 
 $gw = $vars.VITE_API_GATEWAY_WEB
-foreach ($mfe in @(
-    @{ n = "web-movies"; c = "web-app/movies"; i = "tanej666/cinema-frontend-movies" },
-    @{ n = "web-users"; c = "web-app/users"; i = "tanej666/cinema-frontend-users" },
-    @{ n = "web-screenings"; c = "web-app/screenings"; i = "tanej666/cinema-frontend-screenings" },
+$mfes = @(
+    @{ n = "web-movies";       c = "web-app/movies";       i = "tanej666/cinema-frontend-movies" },
+    @{ n = "web-users";        c = "web-app/users";        i = "tanej666/cinema-frontend-users" },
+    @{ n = "web-screenings";   c = "web-app/screenings";   i = "tanej666/cinema-frontend-screenings" },
     @{ n = "web-reservations"; c = "web-app/reservations"; i = "tanej666/cinema-frontend-reservations" }
-)) {
+)
+foreach ($mfe in $mfes) {
     Build-And-Push $mfe.n $mfe.c $mfe.i @{ VITE_API_GATEWAY_WEB = $gw }
 }
 
-Write-Host "`nKoncano. V OpenShift terminalu:" -ForegroundColor Green
-Write-Host "oc rollout restart deployment/web-host deployment/web-movies deployment/web-users deployment/web-screenings deployment/web-reservations"
+Write-Host ""
+Write-Host "Done. In OpenShift terminal run:" -ForegroundColor Green
+Write-Host 'oc rollout restart deployment/web-host deployment/web-movies deployment/web-users deployment/web-screenings deployment/web-reservations'
