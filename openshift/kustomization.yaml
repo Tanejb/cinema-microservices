@@ -13,3 +13,7 @@ resources:
   - services/screenings.yaml
   - services/reservations.yaml
   - services/users-worker.yaml
+  - gateways/api-gateway-web.yaml
+  - gateways/api-gateway-mobile.yaml
+  - routes/api-gateway-web-route.yaml
+  - routes/api-gateway-mobile-route.yaml

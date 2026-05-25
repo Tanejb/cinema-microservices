@@ -166,6 +166,37 @@ oc run curl-test --rm -it --restart=Never --image=curlimages/curl:latest -- \
 | 4 | Frontend (web-host + MFE) |
 | 5 | HPA, NetworkPolicy, dokumentacija za oddajo |
 
+## Korak 3 — API gateway + Route
+
+Po stabilnem Koraku 2 (`mongo`, `movies`, `users`, `screenings`, `reservations`, `users-worker`):
+
+```bash
+cd ~/cinema-microservices
+git pull
+oc apply -k openshift/
+oc get pods
+oc get routes
+```
+
+Pričakuj:
+
+- `api-gateway-web` pod + service + route
+- `api-gateway-mobile` pod + service + route
+
+Pridobi javna URL:
+
+```bash
+oc get route api-gateway-web -o jsonpath='{.spec.host}{"\n"}'
+oc get route api-gateway-mobile -o jsonpath='{.spec.host}{"\n"}'
+```
+
+Test:
+
+```bash
+curl -k https://$(oc get route api-gateway-web -o jsonpath='{.spec.host}')/health
+curl -k https://$(oc get route api-gateway-mobile -o jsonpath='{.spec.host}')/health
+```
+
 Docker slike (CI): namespace `tanej666` na DockerHub — glej korenski `README.md`.
 
 ## Uporabni ukazi

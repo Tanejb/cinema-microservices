@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: api-gateway-mobile
+  namespace: tanejb-dev
+  labels:
+    app: api-gateway-mobile
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  to:
+    kind: Service
+    name: api-gateway-mobile
+  port:
+    targetPort: http
+  tls:
+    termination: edge
