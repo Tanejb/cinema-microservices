@@ -248,9 +248,11 @@ https://web-host-tanejb-dev.apps.rm3.7wse.p1.openshiftapps.com/
 
 Docker slike (CI): namespace `tanej666` na DockerHub — glej korenski `README.md`.
 
-### Frontend: "Blocked request" / manjka `vite.config.js` v podu
+### Frontend: "Blocked request" / `EACCES` na `vite.config.js.timestamp`
 
-Vite preview zavrne Route hostname, če v sliki ni `vite.config.js` z `preview.allowedHosts: true` (stare slike so v runtime kopirale samo `dist/`).
+Vite preview zavrne Route hostname brez `allowedHosts` (env `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=.openshiftapps.com` ali `vite.config.js`).
+
+Če je v sliki `vite.config.js`, Vite ob zagonu zapiše cache v `/app` — na OpenShiftu mora biti `/app` zapisljiv za skupino 0 (`chgrp 0` + `chmod g+rwX` v Dockerfile, `USER 1001`). Brez tega: `EACCES: permission denied, open '/app/vite.config.js.timestamp-...'`.
 
 **Vrstni red na PC:** najprej `git pull` (Dockerfile z `COPY vite.config.js`), šele nato `.\openshift\frontend\build-frontend.ps1`.
 
