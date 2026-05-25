@@ -212,45 +212,37 @@ oc get routes | grep web-
 
 ### 4b) Zgradi slike z OpenShift URL-ji (na PC z Dockerjem)
 
-1. Kopiraj env (vsebina je že za tvoj sandbox `tanejb-dev`):
+`build-env.local` mora vsebovati `VITE_...` vrstice (že nastavljeno za `tanejb-dev`).
 
-   ```bash
-   cp openshift/frontend/build-env.example openshift/frontend/build-env.local
-   ```
-
-   V `build-env.local` pusti samo vrstice `VITE_...` (brez `#` komentarjev iz example, če jih kopiraš zgoraj).
-3. Zgradi in push (primer za host):
+**Prijava na DockerHub** (enkrat):
 
 ```powershell
-cd web-app/host
-docker build --build-arg VITE_REMOTE_MOVIES=https://web-movies-....apps.../assets/remoteEntry.js `
-  --build-arg VITE_REMOTE_USERS=https://web-users-....apps.../assets/remoteEntry.js `
-  --build-arg VITE_REMOTE_SCREENINGS=https://web-screenings-....apps.../assets/remoteEntry.js `
-  --build-arg VITE_REMOTE_RESERVATIONS=https://web-reservations-....apps.../assets/remoteEntry.js `
-  -t tanej666/cinema-frontend-host:latest .
-docker push tanej666/cinema-frontend-host:latest
+docker login
 ```
 
-Za vsak MFE (movies/users/screenings/reservations):
+**Zgradi in push vseh 5 slik** (iz korena repozitorija):
 
 ```powershell
-docker build --build-arg VITE_API_GATEWAY_WEB=https://api-gateway-web-....apps... `
-  -t tanej666/cinema-frontend-movies:latest .
-docker push tanej666/cinema-frontend-movies:latest
+cd "c:\Users\tanej\Documents\FERI - MAG-1-2\ITA\cinema-microservices"
+.\openshift\frontend\build-frontend.ps1
 ```
 
-4. V sandboxu restart:
+Traja ~10–20 min (npm install + build v vsaki sliki).
+
+### 4c) Restart v OpenShift (sandbox terminal)
 
 ```bash
 oc rollout restart deployment/web-host deployment/web-movies deployment/web-users deployment/web-screenings deployment/web-reservations
 oc get pods | grep web-
 ```
 
-### 4c) Odpri UI
+### 4d) Odpri UI
 
 ```text
-https://web-host-<namespace>.apps.<cluster-domain>/
+https://web-host-tanejb-dev.apps.rm3.7wse.p1.openshiftapps.com/
 ```
+
+(ali `oc get route web-host -o jsonpath='https://{.spec.host}{"\n"}'`)
 
 Če sandbox zavrne preveč podov, začasno deploy samo `web-host` + `web-movies` (dva MFE modula).
 
