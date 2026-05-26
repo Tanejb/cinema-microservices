@@ -9,6 +9,7 @@ ARG VITE_API_GATEWAY_WEB=http://localhost:8080
 ENV VITE_API_GATEWAY_WEB=$VITE_API_GATEWAY_WEB
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN printf "VITE_API_GATEWAY_WEB=%s\n" "$VITE_API_GATEWAY_WEB" > .env.production
 RUN npm run build
 
 FROM node:20-alpine AS runtime
