@@ -1,15 +1,18 @@
 import { useMemo, useState } from 'react'
 import './App.css'
 
+const toIframeUrl = (remote, fallback) =>
+  (import.meta.env[remote] || fallback).replace(/\/assets\/remoteEntry\.js$/, '')
+
 function App() {
   const [activeTab, setActiveTab] = useState('movies')
 
   const tabs = useMemo(
     () => [
-      { key: 'movies', label: 'Movies', url: 'http://localhost:4311' },
-      { key: 'users', label: 'Users', url: 'http://localhost:4312' },
-      { key: 'screenings', label: 'Screenings', url: 'http://localhost:4313' },
-      { key: 'reservations', label: 'Reservations', url: 'http://localhost:4314' },
+      { key: 'movies', label: 'Movies', url: toIframeUrl('VITE_REMOTE_MOVIES', 'http://localhost:4311/assets/remoteEntry.js') },
+      { key: 'users', label: 'Users', url: toIframeUrl('VITE_REMOTE_USERS', 'http://localhost:4312/assets/remoteEntry.js') },
+      { key: 'screenings', label: 'Screenings', url: toIframeUrl('VITE_REMOTE_SCREENINGS', 'http://localhost:4313/assets/remoteEntry.js') },
+      { key: 'reservations', label: 'Reservations', url: toIframeUrl('VITE_REMOTE_RESERVATIONS', 'http://localhost:4314/assets/remoteEntry.js') },
     ],
     [],
   )
