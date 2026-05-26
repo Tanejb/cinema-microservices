@@ -1,0 +1,30 @@
+# Horizontal Pod Autoscaler for movies-service (CPU-based).
+# Requires metrics-server (or equivalent) in the cluster; on Developer Sandbox
+# HPA may show "unknown" metrics until the platform provides them.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: movies-service-hpa
+  namespace: tanejb-dev
+  labels:
+    app: movies-service
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: movies-service
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 120
+    scaleUp:
+      stabilizationWindowSeconds: 60

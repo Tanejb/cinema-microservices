@@ -9,8 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
-        component:
+        include:
           - name: movies-service
             context: ./movies
             dockerfile: ./movies/Dockerfile
@@ -43,22 +44,35 @@ jobs:
             context: ./web-app/host
             dockerfile: ./web-app/host/Dockerfile
             image: tanej666/cinema-frontend-host
+            build_args: |
+              VITE_REMOTE_MOVIES=${{ vars.VITE_REMOTE_MOVIES }}
+              VITE_REMOTE_USERS=${{ vars.VITE_REMOTE_USERS }}
+              VITE_REMOTE_SCREENINGS=${{ vars.VITE_REMOTE_SCREENINGS }}
+              VITE_REMOTE_RESERVATIONS=${{ vars.VITE_REMOTE_RESERVATIONS }}
           - name: web-movies
             context: ./web-app/movies
             dockerfile: ./web-app/movies/Dockerfile
             image: tanej666/cinema-frontend-movies
+            build_args: |
+              VITE_API_GATEWAY_WEB=${{ vars.VITE_API_GATEWAY_WEB }}
           - name: web-users
             context: ./web-app/users
             dockerfile: ./web-app/users/Dockerfile
             image: tanej666/cinema-frontend-users
+            build_args: |
+              VITE_API_GATEWAY_WEB=${{ vars.VITE_API_GATEWAY_WEB }}
           - name: web-screenings
             context: ./web-app/screenings
             dockerfile: ./web-app/screenings/Dockerfile
             image: tanej666/cinema-frontend-screenings
+            build_args: |
+              VITE_API_GATEWAY_WEB=${{ vars.VITE_API_GATEWAY_WEB }}
           - name: web-reservations
             context: ./web-app/reservations
             dockerfile: ./web-app/reservations/Dockerfile
             image: tanej666/cinema-frontend-reservations
+            build_args: |
+              VITE_API_GATEWAY_WEB=${{ vars.VITE_API_GATEWAY_WEB }}
 
     steps:
       - name: Checkout code
@@ -73,12 +87,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.component.name }}
+      - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.component.context }}
-          file: ${{ matrix.component.dockerfile }}
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
+          build-args: ${{ matrix.build_args }}
           tags: |
-            ${{ matrix.component.image }}:latest
-            ${{ matrix.component.image }}:sha-${{ github.sha }}
+            ${{ matrix.image }}:latest
+            ${{ matrix.image }}:sha-${{ github.sha }}

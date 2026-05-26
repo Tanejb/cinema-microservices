@@ -223,7 +223,9 @@ Vsaka mikrostoritev vsebuje svojo poslovno logiko, API sloj in infrastrukturo.
 
 ## Namestitev na OpenShift
 
-Manifesti in navodila po korakih: **[openshift/README.md](openshift/README.md)** (Developer Sandbox, namespace `cinema`).
+Manifesti in navodila po korakih: **[openshift/README.md](openshift/README.md)** (Developer Sandbox, namespace npr. `tanejb-dev`).
+
+Dokumentacija za oddajo (arhitektura, varnost, HPA, NetworkPolicy): **[docs/openshift-deployment.md](docs/openshift-deployment.md)**.
 
 ---
 
@@ -279,6 +281,14 @@ Pred uporabo v GitHub repozitoriju nastavite naslednja secrets:
 
 - `DOCKERHUB_USERNAME` -> npr. `tanej666`
 - `DOCKERHUB_TOKEN` -> DockerHub access token
+
+Za **frontend** slike v CI nastavite še repository **variables** (Route URL-ji OpenShift), da build ne vsebuje `localhost`:
+
+- `VITE_API_GATEWAY_WEB`, `VITE_REMOTE_MOVIES`, `VITE_REMOTE_USERS`, `VITE_REMOTE_SCREENINGS`, `VITE_REMOTE_RESERVATIONS`
+
+Glej [openshift/README.md](openshift/README.md) (Korak 5) in [openshift/frontend/build-env.example](openshift/frontend/build-env.example).
+
+Workflow uporablja `max-parallel: 3` zaradi DockerHub pull rate limita.
 
 Priporoceni DockerHub repozitoriji:
 

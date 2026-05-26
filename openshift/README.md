@@ -158,13 +158,56 @@ oc run curl-test --rm -it --restart=Never --image=curlimages/curl:latest -- \
   curl -s http://movies-service:3001/health
 ```
 
-## Naslednji koraki
+## Korak 5 — HPA, NetworkPolicy, dokumentacija
 
-| Korak | Vsebina |
-|-------|---------|
-| 3 | API Gateway web + mobile + Route |
-| 4 | Frontend (web-host + MFE) |
-| 5 | HPA, NetworkPolicy, dokumentacija za oddajo |
+Po uspešnem Koraku 4:
+
+```bash
+cd ~/cinema-microservices
+git pull
+oc apply -k openshift/
+oc get hpa
+oc get networkpolicy
+```
+
+### HPA (movies-service)
+
+- Datoteka: `scaling/movies-hpa.yaml`
+- 1–3 replike, CPU 70 %
+- Preveri: `oc get hpa movies-service-hpa`
+
+### NetworkPolicy
+
+- Datoteka: `policies/network-policies.yaml`
+- Omeji dostop do Mongo/RabbitMQ in mikrostoritev (glej [docs/openshift-deployment.md](../docs/openshift-deployment.md))
+
+### Dokumentacija za oddajo
+
+- **[docs/openshift-deployment.md](../docs/openshift-deployment.md)** — arhitektura, varnost, preverjanje, omejitve sandboxa
+
+### Pin image tagov (namesto zgolj `:latest`)
+
+```bash
+# po build-frontend.ps1 na PC (zapiše openshift/image-tag.env)
+./openshift/scripts/set-image-tag.sh
+oc apply -k openshift/
+```
+
+Windows: `.\openshift\scripts\set-image-tag.ps1 -Tag openshift-20260526-2100`
+
+### GitHub CI — frontend build-args
+
+V repozitoriju nastavi **Settings → Secrets and variables → Actions → Variables**:
+
+| Variable | Primer |
+|----------|--------|
+| `VITE_API_GATEWAY_WEB` | `https://api-gateway-web-tanejb-dev.apps....` |
+| `VITE_REMOTE_MOVIES` | `https://web-movies-tanejb-dev.apps..../assets/remoteEntry.js` |
+| `VITE_REMOTE_USERS` | `...` |
+| `VITE_REMOTE_SCREENINGS` | `...` |
+| `VITE_REMOTE_RESERVATIONS` | `...` |
+
+Workflow `dockerhub-publish.yml` uporablja `max-parallel: 3` (manj DockerHub rate limit napak).
 
 ## Korak 3 — API gateway + Route
 
@@ -269,6 +312,16 @@ Pričakovan izpis: `.openshiftapps.com`. Po novem buildu lahko preveriš tudi:
 
 ```bash
 oc exec deployment/web-host -- ls -la /app/vite.config.js
+```
+
+### ReplicaSet kvota (30)
+
+Če `rollout restart` ne ustvari novih podov:
+
+```bash
+oc get events | grep ReplicaSetCreateError | tail -3
+oc get rs | awk 'NR>1 && $2==0 && $3==0 && $4==0 {print $1}' | xargs oc delete rs
+oc rollout restart deployment/web-host ...
 ```
 
 ## Uporabni ukazi

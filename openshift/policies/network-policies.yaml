@@ -1,0 +1,158 @@
+# Network segmentation for cinema-microservices (namespace-scoped).
+# Pods without a matching NetworkPolicy keep default allow-all ingress.
+# On some Sandbox clusters NetworkPolicy is a no-op until the SDN supports it.
+---
+# Public Routes -> API gateways (8080 / 8081)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-api-gateways
+  namespace: tanejb-dev
+  labels:
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - api-gateway-web
+          - api-gateway-mobile
+  policyTypes:
+    - Ingress
+  ingress:
+    - {} # OpenShift Router / external clients
+---
+# Public Routes -> micro-frontend pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-web-frontends
+  namespace: tanejb-dev
+  labels:
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - web-host
+          - web-movies
+          - web-users
+          - web-screenings
+          - web-reservations
+  policyTypes:
+    - Ingress
+  ingress:
+    - {}
+---
+# Gateways -> HTTP microservices only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-microservices-from-gateways
+  namespace: tanejb-dev
+  labels:
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - movies-service
+          - users-service
+          - screenings-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway-web
+        - podSelector:
+            matchLabels:
+              app: api-gateway-mobile
+---
+# Gateways -> reservations (gRPC)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-reservations-from-gateways
+  namespace: tanejb-dev
+  labels:
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: reservations-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway-web
+        - podSelector:
+            matchLabels:
+              app: api-gateway-mobile
+      ports:
+        - protocol: TCP
+          port: 50051
+---
+# Microservices + worker -> MongoDB
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-mongo-from-apps
+  namespace: tanejb-dev
+  labels:
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: mongo
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - movies-service
+                  - users-service
+                  - screenings-service
+                  - reservations-service
+                  - users-worker
+      ports:
+        - protocol: TCP
+          port: 27017
+---
+# users-service + worker -> RabbitMQ
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-rabbitmq-from-users
+  namespace: tanejb-dev
+  labels:
+    app.kubernetes.io/part-of: cinema-microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: rabbitmq
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: users-service
+        - podSelector:
+            matchLabels:
+              app: users-worker
+      ports:
+        - protocol: TCP
+          port: 5672

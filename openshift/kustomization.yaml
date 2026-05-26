@@ -18,3 +18,45 @@ resources:
   - routes/api-gateway-web-route.yaml
   - routes/api-gateway-mobile-route.yaml
   - frontend/web-frontend.yaml
+  - scaling/movies-hpa.yaml
+  - policies/network-policies.yaml
+# Pin image tags here (avoid relying on mutable :latest in production).
+# Override: ./scripts/set-image-tag.sh fixapi-20260526
+#           .\scripts\set-image-tag.ps1 -Tag fixapi-20260526
+images:
+  - name: docker.io/tanej666/cinema-movies-service
+    newName: docker.io/tanej666/cinema-movies-service
+    newTag: latest
+  - name: docker.io/tanej666/cinema-users-service
+    newName: docker.io/tanej666/cinema-users-service
+    newTag: latest
+  - name: docker.io/tanej666/cinema-users-worker
+    newName: docker.io/tanej666/cinema-users-worker
+    newTag: latest
+  - name: docker.io/tanej666/cinema-screenings-service
+    newName: docker.io/tanej666/cinema-screenings-service
+    newTag: latest
+  - name: docker.io/tanej666/cinema-reservations-service
+    newName: docker.io/tanej666/cinema-reservations-service
+    newTag: latest
+  - name: docker.io/tanej666/cinema-api-gateway-web
+    newName: docker.io/tanej666/cinema-api-gateway-web
+    newTag: latest
+  - name: docker.io/tanej666/cinema-api-gateway-mobile
+    newName: docker.io/tanej666/cinema-api-gateway-mobile
+    newTag: latest
+  - name: docker.io/tanej666/cinema-frontend-host
+    newName: docker.io/tanej666/cinema-frontend-host
+    newTag: latest
+  - name: docker.io/tanej666/cinema-frontend-movies
+    newName: docker.io/tanej666/cinema-frontend-movies
+    newTag: latest
+  - name: docker.io/tanej666/cinema-frontend-users
+    newName: docker.io/tanej666/cinema-frontend-users
+    newTag: latest
+  - name: docker.io/tanej666/cinema-frontend-screenings
+    newName: docker.io/tanej666/cinema-frontend-screenings
+    newTag: latest
+  - name: docker.io/tanej666/cinema-frontend-reservations
+    newName: docker.io/tanej666/cinema-frontend-reservations
+    newTag: latest

@@ -1,9 +1,30 @@
 # Build and push all frontend images using build-env.local
 # Requires: Docker Desktop, docker login
 
+param(
+    [string]$Tag = "",
+    [switch]$NoCache
+)
+
 $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path "$PSScriptRoot\..\..").Path
+$OpenShiftDir = Resolve-Path "$PSScriptRoot\.."
 $EnvFile = Join-Path $PSScriptRoot "build-env.local"
+$TagEnvFile = Join-Path $OpenShiftDir "image-tag.env"
+
+if (-not $Tag) {
+    if (Test-Path $TagEnvFile) {
+        Get-Content $TagEnvFile | ForEach-Object {
+            $line = $_.Trim()
+            if ($line -match "^CINEMA_IMAGE_TAG=(.+)$") {
+                $Tag = $Matches[1].Trim()
+            }
+        }
+    }
+}
+if (-not $Tag) {
+    $Tag = "openshift-" + (Get-Date -Format "yyyyMMdd-HHmm")
+}
 
 if (-not (Test-Path $EnvFile)) {
     Write-Error "Missing build-env.local - copy from build-env.example"
@@ -32,6 +53,9 @@ foreach ($key in $required) {
     }
 }
 
+"CINEMA_IMAGE_TAG=$Tag" | Set-Content -Path $TagEnvFile -Encoding utf8
+Write-Host "Image tag: $Tag (saved to openshift/image-tag.env)" -ForegroundColor Yellow
+
 function Build-And-Push {
     param(
         [string]$Name,
@@ -40,6 +64,7 @@ function Build-And-Push {
         [hashtable]$BuildArgs
     )
     $argList = @()
+    if ($NoCache) { $argList += "--no-cache" }
     foreach ($k in $BuildArgs.Keys) {
         $argList += "--build-arg"
         $argList += ($k + "=" + $BuildArgs[$k])
@@ -48,9 +73,11 @@ function Build-And-Push {
     Write-Host "=== $Name ===" -ForegroundColor Cyan
     Push-Location (Join-Path $Root $Context)
     try {
-        & docker build @argList -t ($Image + ":latest") .
+        & docker build @argList -t ($Image + ":latest") -t ($Image + ":" + $Tag) .
         if ($LASTEXITCODE -ne 0) { throw "docker build failed" }
         & docker push ($Image + ":latest")
+        if ($LASTEXITCODE -ne 0) { throw "docker push failed" }
+        & docker push ($Image + ":" + $Tag)
         if ($LASTEXITCODE -ne 0) { throw "docker push failed" }
     }
     finally {
@@ -77,5 +104,6 @@ foreach ($mfe in $mfes) {
 }
 
 Write-Host ""
-Write-Host "Done. In OpenShift terminal run:" -ForegroundColor Green
-Write-Host 'oc rollout restart deployment/web-host deployment/web-movies deployment/web-users deployment/web-screenings deployment/web-reservations'
+Write-Host "Done. Pin tag in cluster:" -ForegroundColor Green
+Write-Host "  .\openshift\scripts\set-image-tag.ps1 -Tag $Tag"
+Write-Host "  oc apply -k openshift/"
